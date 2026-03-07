@@ -8,6 +8,7 @@ function App() {
 
   return (
     <>
+        <button class="font-bold text-lg bg-blue-500 text-white p-2 rounded">przycisk tailwindcss</button>
         <div>Strona STT</div>
     </>
   )
