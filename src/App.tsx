@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import ContactPage from './pages/ContactPage'
 import AboutPage from './pages/AboutPage'
 import MainPage from './pages/MainPage'
@@ -16,10 +16,8 @@ function App() {
                         <Route
                             path="liveTranscribe"
                             element={<LiveTranscribePage />}
-                        />                        <Route
-                            path="testPage"
-                            element={<TestPage />}
-                        />
+                        />{' '}
+                        <Route path="testPage" element={<TestPage />} />
                     </Route>
                 </Routes>
             </BrowserRouter>
