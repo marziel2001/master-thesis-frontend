@@ -1,17 +1,23 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Route, Routes } from 'react-router'
+import ContactPage from './pages/ContactPage'
+import AboutPage from './pages/AboutPage'
+import MainPage from './pages/MainPage'
+import LayoutPage from './pages/LayoutPage'
 
 function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-        <button class="font-bold text-lg bg-blue-500 text-white p-2 rounded">przycisk tailwindcss</button>
-        <div>Strona STT</div>
-    </>
-  )
+    return (
+        <>
+            <BrowserRouter>
+                <Routes>
+                    <Route path="/" element={<LayoutPage />}>
+                        <Route index element={<MainPage />} />
+                        <Route path="about" element={<AboutPage />} />
+                        <Route path="contact" element={<ContactPage />} />
+                    </Route>
+                </Routes>
+            </BrowserRouter>
+        </>
+    )
 }
 
 export default App
