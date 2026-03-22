@@ -13,6 +13,9 @@ export default function Navbar() {
                 <NavLink className={linkStyle} to="/liveTranscribe">
                     Transkrypcja na żywo
                 </NavLink>
+                <NavLink className={linkStyle} to="/testPage">
+                    Test Page
+                </NavLink>
             </div>
         </nav>
     )
