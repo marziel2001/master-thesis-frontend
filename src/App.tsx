@@ -13,6 +13,8 @@ function App() {
                 <Routes>
                     <Route path="/" element={<LayoutPage />}>
                         <Route index element={<MainPage />} />
+                        <Route path="about" element={<AboutPage />} />
+                        <Route path="contact" element={<ContactPage />} />
                         <Route
                             path="liveTranscribe"
                             element={<LiveTranscribePage />}

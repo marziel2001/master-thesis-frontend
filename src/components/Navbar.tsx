@@ -1,20 +1,33 @@
 import { NavLink } from 'react-router-dom'
 
 export default function Navbar() {
-    const linkStyle =
-        '  text-2xl bg-amber-50 text-black p-2 m-2 border-black border-2 rounded-lg'
+    const baseLinkStyle =
+        'rounded-md px-3 py-2 text-sm font-medium transition-colors'
+
+    const getLinkStyle = ({ isActive }: { isActive: boolean }) =>
+        `${baseLinkStyle} ${
+            isActive
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+        }`
 
     return (
-        <nav>
-            <div className="flex">
-                <NavLink className={linkStyle} to="/">
+        <nav className="rounded-2xl bg-white p-3 shadow-md">
+            <div className="flex flex-wrap gap-2">
+                <NavLink className={getLinkStyle} to="/">
                     Transkrypcja Pliku
                 </NavLink>
-                <NavLink className={linkStyle} to="/liveTranscribe">
+                <NavLink className={getLinkStyle} to="/liveTranscribe">
                     Transkrypcja na żywo
                 </NavLink>
-                <NavLink className={linkStyle} to="/testPage">
+                <NavLink className={getLinkStyle} to="/testPage">
                     Test Page
+                </NavLink>
+                <NavLink className={getLinkStyle} to="/about">
+                    About
+                </NavLink>
+                <NavLink className={getLinkStyle} to="/contact">
+                    Contact
                 </NavLink>
             </div>
         </nav>

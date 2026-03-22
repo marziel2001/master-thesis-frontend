@@ -3,11 +3,13 @@ import Navbar from '../components/Navbar'
 
 export default function LayoutPage() {
     return (
-        <div className="w-full h-full pl-50 pr-50 pt-20 bg-green-500">
-            <Navbar />
-            <main>
-                <Outlet />
-            </main>
+        <div className="min-h-screen bg-gray-100 p-6">
+            <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+                <Navbar />
+                <main className="rounded-2xl bg-white p-6 shadow-md">
+                    <Outlet />
+                </main>
+            </div>
         </div>
     )
 }

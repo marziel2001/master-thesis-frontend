@@ -118,50 +118,46 @@ function TestPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 p-6">
-            <div className="mx-auto max-w-6xl rounded-2xl bg-white p-6 shadow-md">
-                <h2 className="mb-4 text-2xl font-semibold text-gray-900">
-                    Multi-model transcription
-                </h2>
+        <div>
+            <h2 className="mb-4 text-2xl font-semibold text-gray-900">
+                Multi-model transcription
+            </h2>
 
-                <div className="mb-5 flex flex-wrap items-center gap-3">
-                    <input
-                        className="block w-full max-w-sm rounded-md border border-gray-300 bg-white p-2 text-sm"
-                        type="file"
-                        accept="audio/*"
-                        onChange={(event) =>
-                            setFile(event.target.files?.[0] ?? null)
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+                <input
+                    className="block w-full max-w-sm rounded-md border border-gray-300 bg-white p-2 text-sm"
+                    type="file"
+                    accept="audio/*"
+                    onChange={(event) =>
+                        setFile(event.target.files?.[0] ?? null)
+                    }
+                />
+                <button
+                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"
+                    onClick={handleUpload}
+                    disabled={MODELS.every((model) => !enabledModels[model])}
+                >
+                    Send to selected models
+                </button>
+            </div>
+
+            {statusMessage ? (
+                <p className="mb-4 text-sm text-red-600">{statusMessage}</p>
+            ) : null}
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {MODELS.map((model) => (
+                    <TranscriptionWidget
+                        key={model}
+                        model={model}
+                        checked={enabledModels[model]}
+                        loading={loadingState[model]}
+                        result={results[model]}
+                        onCheckedChange={(checked) =>
+                            updateModelEnabled(model, checked)
                         }
                     />
-                    <button
-                        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"
-                        onClick={handleUpload}
-                        disabled={MODELS.every(
-                            (model) => !enabledModels[model]
-                        )}
-                    >
-                        Send to selected models
-                    </button>
-                </div>
-
-                {statusMessage ? (
-                    <p className="mb-4 text-sm text-red-600">{statusMessage}</p>
-                ) : null}
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    {MODELS.map((model) => (
-                        <TranscriptionWidget
-                            key={model}
-                            model={model}
-                            checked={enabledModels[model]}
-                            loading={loadingState[model]}
-                            result={results[model]}
-                            onCheckedChange={(checked) =>
-                                updateModelEnabled(model, checked)
-                            }
-                        />
-                    ))}
-                </div>
+                ))}
             </div>
         </div>
     )
