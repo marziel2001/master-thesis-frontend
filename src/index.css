@@ -15,3 +15,15 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
+* {
+    box-sizing: border-box;
+}
+
+button {
+    color: black;
+    background-color: yellow;
+    padding: 1em;
+    border: 2px solid black;
+    margin: 0.5em;
+    cursor: pointer;
+}
