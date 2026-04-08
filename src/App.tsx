@@ -4,7 +4,6 @@ import AboutPage from './pages/AboutPage'
 import MainPage from './pages/MainPage'
 import LayoutPage from './pages/LayoutPage'
 import LiveTranscribePage from './pages/LiveTranscribePage'
-import TestPage from './pages/TestPage'
 
 function App() {
     return (
@@ -19,7 +18,6 @@ function App() {
                             path="liveTranscribe"
                             element={<LiveTranscribePage />}
                         />{' '}
-                        <Route path="testPage" element={<TestPage />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

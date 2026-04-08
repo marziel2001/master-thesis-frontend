@@ -20,9 +20,6 @@ export default function Navbar() {
                 <NavLink className={getLinkStyle} to="/liveTranscribe">
                     Transkrypcja na żywo
                 </NavLink>
-                <NavLink className={getLinkStyle} to="/testPage">
-                    Test Page
-                </NavLink>
                 <NavLink className={getLinkStyle} to="/about">
                     About
                 </NavLink>

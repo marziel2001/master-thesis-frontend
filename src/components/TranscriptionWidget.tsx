@@ -1,8 +1,11 @@
+import ColoredDiff from './ColoredDiff'
+
 type TranscriptionWidgetProps = {
     model: string
     checked: boolean
     loading: boolean
     result: string
+    referenceText: string
     onCheckedChange: (checked: boolean) => void
 }
 
@@ -11,6 +14,7 @@ export default function TranscriptionWidget({
     checked,
     loading,
     result,
+    referenceText,
     onCheckedChange,
 }: TranscriptionWidgetProps) {
     return (
@@ -36,6 +40,13 @@ export default function TranscriptionWidget({
                         ? 'Result will appear here'
                         : 'Enable this model to include it in transcription'
                 }
+            />
+
+            <ColoredDiff
+                enabled={checked}
+                referenceText={referenceText}
+                hypothesisText={result}
+                modelName={model}
             />
         </section>
     )
