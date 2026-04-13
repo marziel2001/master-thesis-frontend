@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { getDiffHtml } from '../requests/diff'
 
 type ColoredDiffProps = {
     referenceText: string
@@ -31,27 +31,13 @@ export default function ColoredDiff({
         const loadDiff = async () => {
             setLoading(true)
             try {
-                const response = await axios.post(
-                    'http://127.0.0.1:8000/api/diff-html',
-                    {
-                        reference_text: referenceText,
-                        hypothesis_text: hypothesisText,
-                        model_name: modelName,
-                        normalize: true,
-                    },
-                    {
-                        headers: {
-                            Accept: 'application/json',
-                            'Content-Type': 'application/json',
-                        },
-                    }
-                )
+                const htmlFromApi = await getDiffHtml({
+                    referenceText,
+                    hypothesisText,
+                    modelName,
+                })
 
                 if (!cancelled) {
-                    const htmlFromApi =
-                        typeof response.data?.html === 'string'
-                            ? response.data.html
-                            : ''
                     setDiffHtml(htmlFromApi)
                 }
             } catch {

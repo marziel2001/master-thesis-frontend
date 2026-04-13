@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import axios from 'axios'
 import TranscriptionWidget from '../components/TranscriptionWidget'
+import { transcribeAudio } from '../requests/transcription'
 
 const MODELS = [
     'openai',
@@ -11,7 +11,7 @@ const MODELS = [
 ] as const
 type ModelName = (typeof MODELS)[number]
 
-function TestPage() {
+function MainPage() {
     const [file, setFile] = useState<File | null>(null)
     const [referenceText, setReferenceText] = useState('')
     const [statusMessage, setStatusMessage] = useState('')
@@ -71,28 +71,14 @@ function TestPage() {
         try {
             await Promise.all(
                 selectedModels.map(async (model) => {
-                    const formData = new FormData()
-                    formData.append('file', file)
-
                     setModelLoading(model, true)
                     setModelResult(model, '')
 
                     try {
-                        const response = await axios.post(
-                            `http://127.0.0.1:8000/api/transcribe/${model}`,
-                            formData,
-                            {
-                                headers: {
-                                    Accept: 'application/json',
-                                },
-                            }
+                        const transcriptionText = await transcribeAudio(
+                            model,
+                            file
                         )
-
-                        const data = response.data
-                        const transcriptionText =
-                            typeof data?.transcription === 'string'
-                                ? data.transcription
-                                : ''
 
                         setModelResult(
                             model,
@@ -181,4 +167,4 @@ function TestPage() {
     )
 }
 
-export default TestPage
+export default MainPage
