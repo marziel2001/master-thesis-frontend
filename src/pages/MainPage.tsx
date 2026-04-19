@@ -10,6 +10,15 @@ const MODELS = [
     'amazonStt',
 ] as const
 type ModelName = (typeof MODELS)[number]
+type ModelMetrics = {
+    wer: number | null
+    cer: number | null
+}
+
+const EMPTY_METRICS: ModelMetrics = {
+    wer: null,
+    cer: null,
+}
 
 function MainPage() {
     const [file, setFile] = useState<File | null>(null)
@@ -21,6 +30,13 @@ function MainPage() {
         googleStt: '',
         azureStt: '',
         amazonStt: '',
+    })
+    const [metrics, setMetrics] = useState<Record<ModelName, ModelMetrics>>({
+        openai: EMPTY_METRICS,
+        whisperOffline: EMPTY_METRICS,
+        googleStt: EMPTY_METRICS,
+        azureStt: EMPTY_METRICS,
+        amazonStt: EMPTY_METRICS,
     })
     const [loadingState, setLoadingState] = useState<
         Record<ModelName, boolean>
@@ -49,6 +65,10 @@ function MainPage() {
         setResults((previous) => ({ ...previous, [model]: text }))
     }
 
+    const setModelMetrics = (model: ModelName, value: ModelMetrics) => {
+        setMetrics((previous) => ({ ...previous, [model]: value }))
+    }
+
     const updateModelEnabled = (model: ModelName, enabled: boolean) => {
         setEnabledModels((previous) => ({ ...previous, [model]: enabled }))
     }
@@ -73,24 +93,25 @@ function MainPage() {
                 selectedModels.map(async (model) => {
                     setModelLoading(model, true)
                     setModelResult(model, '')
+                    setModelMetrics(model, EMPTY_METRICS)
 
                     try {
-                        const transcriptionText = await transcribeAudio(
-                            model,
-                            file
-                        )
+                        const { transcription, wer, cer } =
+                            await transcribeAudio(model, file, referenceText)
 
                         setModelResult(
                             model,
-                            transcriptionText ||
+                            transcription ||
                                 'No transcription text in response.'
                         )
+                        setModelMetrics(model, { wer, cer })
                     } catch (error) {
                         console.error(error)
                         setModelResult(
                             model,
                             'There was an error during transcription. Please try again.'
                         )
+                        setModelMetrics(model, EMPTY_METRICS)
                     } finally {
                         setModelLoading(model, false)
                     }
@@ -156,6 +177,7 @@ function MainPage() {
                         checked={enabledModels[model]}
                         loading={loadingState[model]}
                         result={results[model]}
+                        metrics={metrics[model]}
                         referenceText={referenceText}
                         onCheckedChange={(checked) =>
                             updateModelEnabled(model, checked)
