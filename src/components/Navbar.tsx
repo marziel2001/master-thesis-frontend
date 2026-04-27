@@ -23,9 +23,9 @@ export default function Navbar() {
                 <NavLink className={getLinkStyle} to="/about">
                     About
                 </NavLink>
-                <NavLink className={getLinkStyle} to="/contact">
+                {/* <NavLink className={getLinkStyle} to="/contact">
                     Contact
-                </NavLink>
+                </NavLink> */}
             </div>
         </nav>
     )
