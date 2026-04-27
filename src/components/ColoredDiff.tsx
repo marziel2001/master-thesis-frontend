@@ -66,7 +66,7 @@ export default function ColoredDiff({
 
     if (!referenceText.trim()) {
         return (
-            <p className="mt-3 text-xs text-gray-500">
+            <p className="text-xs text-gray-500">
                 Add reference text to see notebook-style diff.
             </p>
         )
@@ -74,17 +74,15 @@ export default function ColoredDiff({
 
     if (!hypothesisText.trim()) {
         return (
-            <p className="mt-3 text-xs text-gray-500">
+            <p className="text-xs text-gray-500">
                 Run transcription to see notebook-style diff.
             </p>
         )
     }
 
     if (loading) {
-        return <p className="mt-3 text-xs text-gray-500">Loading diff...</p>
+        return <p className="text-xs text-gray-500">Loading diff...</p>
     }
 
-    return (
-        <div className="mt-3" dangerouslySetInnerHTML={{ __html: diffHtml }} />
-    )
+    return <div dangerouslySetInnerHTML={{ __html: diffHtml }} />
 }

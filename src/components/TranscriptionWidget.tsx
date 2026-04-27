@@ -9,6 +9,7 @@ type TranscriptionWidgetProps = {
     model: string
     checked: boolean
     loading: boolean
+    status: 'idle' | 'loading' | 'success' | 'error'
     result: string
     metrics: Metrics
     referenceText: string
@@ -19,15 +20,29 @@ export default function TranscriptionWidget({
     model,
     checked,
     loading,
+    status,
     result,
     metrics,
     referenceText,
     onCheckedChange,
 }: TranscriptionWidgetProps) {
     const hasMetrics = metrics.wer !== null && metrics.cer !== null
+    const statusStyles: Record<TranscriptionWidgetProps['status'], string> = {
+        idle: 'border-gray-200 bg-white',
+        loading: 'border-yellow-300 bg-yellow-300',
+        success: 'border-green-300 bg-green-200',
+        error: 'border-red-300 bg-red-200',
+    }
+    const diffContainerClassName = checked
+        ? 'max-h-[9999px] opacity-100 mt-3'
+        : 'max-h-0 opacity-0 mt-0'
 
     return (
-        <section className="w-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <section
+            className={`w-full rounded-xl border p-4 shadow-sm transition-all duration-300 ease-out ${
+                statusStyles[status]
+            }`}
+        >
             <label className="mb-3 flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-gray-800">
                     {model}
@@ -66,12 +81,16 @@ export default function TranscriptionWidget({
                 </div>
             </div>
 
-            <ColoredDiff
-                enabled={checked}
-                referenceText={referenceText}
-                hypothesisText={result}
-                modelName={model}
-            />
+            <div
+                className={`overflow-hidden transition-[max-height,opacity,margin] duration-300 ease-out ${diffContainerClassName}`}
+            >
+                <ColoredDiff
+                    enabled={checked}
+                    referenceText={referenceText}
+                    hypothesisText={result}
+                    modelName={model}
+                />
+            </div>
         </section>
     )
 }

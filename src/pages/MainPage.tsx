@@ -14,6 +14,7 @@ type ModelMetrics = {
     wer: number | null
     cer: number | null
 }
+type ModelStatus = 'idle' | 'loading' | 'success' | 'error'
 
 const EMPTY_METRICS: ModelMetrics = {
     wer: null,
@@ -47,6 +48,15 @@ function MainPage() {
         azureStt: false,
         amazonStt: false,
     })
+    const [statusByModel, setStatusByModel] = useState<
+        Record<ModelName, ModelStatus>
+    >({
+        openai: 'idle',
+        whisperOffline: 'idle',
+        googleStt: 'idle',
+        azureStt: 'idle',
+        amazonStt: 'idle',
+    })
     const [enabledModels, setEnabledModels] = useState<
         Record<ModelName, boolean>
     >({
@@ -69,8 +79,15 @@ function MainPage() {
         setMetrics((previous) => ({ ...previous, [model]: value }))
     }
 
+    const setModelStatus = (model: ModelName, status: ModelStatus) => {
+        setStatusByModel((previous) => ({ ...previous, [model]: status }))
+    }
+
     const updateModelEnabled = (model: ModelName, enabled: boolean) => {
         setEnabledModels((previous) => ({ ...previous, [model]: enabled }))
+        if (!enabled) {
+            setModelStatus(model, 'idle')
+        }
     }
 
     const handleUpload = async () => {
@@ -92,6 +109,7 @@ function MainPage() {
             await Promise.all(
                 selectedModels.map(async (model) => {
                     setModelLoading(model, true)
+                    setModelStatus(model, 'loading')
                     setModelResult(model, '')
                     setModelMetrics(model, EMPTY_METRICS)
 
@@ -105,6 +123,7 @@ function MainPage() {
                                 'No transcription text in response.'
                         )
                         setModelMetrics(model, { wer, cer })
+                        setModelStatus(model, 'success')
                     } catch (error) {
                         console.error(error)
                         setModelResult(
@@ -112,6 +131,7 @@ function MainPage() {
                             'There was an error during transcription. Please try again.'
                         )
                         setModelMetrics(model, EMPTY_METRICS)
+                        setModelStatus(model, 'error')
                     } finally {
                         setModelLoading(model, false)
                     }
@@ -176,6 +196,7 @@ function MainPage() {
                         model={model}
                         checked={enabledModels[model]}
                         loading={loadingState[model]}
+                        status={statusByModel[model]}
                         result={results[model]}
                         metrics={metrics[model]}
                         referenceText={referenceText}
