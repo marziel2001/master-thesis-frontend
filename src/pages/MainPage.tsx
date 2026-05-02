@@ -24,7 +24,6 @@ function MainPage() {
     const [results, setResults] = useState<Record<ModelName, string>>({
         openai: '',
         whisperOffline: '',
-        whisperX: '',
         googleStt: '',
         azureStt: '',
         amazonStt: '',
@@ -32,7 +31,6 @@ function MainPage() {
     const [metrics, setMetrics] = useState<Record<ModelName, ModelMetrics>>({
         openai: EMPTY_METRICS,
         whisperOffline: EMPTY_METRICS,
-        whisperX: EMPTY_METRICS,
         googleStt: EMPTY_METRICS,
         azureStt: EMPTY_METRICS,
         amazonStt: EMPTY_METRICS,
@@ -42,7 +40,6 @@ function MainPage() {
     >({
         openai: false,
         whisperOffline: false,
-        whisperX: false,
         googleStt: false,
         azureStt: false,
         amazonStt: false,
@@ -52,7 +49,6 @@ function MainPage() {
     >({
         openai: 'idle',
         whisperOffline: 'idle',
-        whisperX: 'idle',
         googleStt: 'idle',
         azureStt: 'idle',
         amazonStt: 'idle',
@@ -62,7 +58,6 @@ function MainPage() {
     >({
         openai: true,
         whisperOffline: true,
-        whisperX: true,
         googleStt: true,
         azureStt: true,
         amazonStt: true,
@@ -90,6 +85,25 @@ function MainPage() {
             setModelStatus(model, 'idle')
         }
     }
+
+    const setAllModelsEnabled = (enabled: boolean) => {
+        setEnabledModels(
+            MODELS.reduce(
+                (next, model) => ({
+                    ...next,
+                    [model]: enabled,
+                }),
+                {} as Record<ModelName, boolean>
+            )
+        )
+
+        if (!enabled) {
+            MODELS.forEach((model) => setModelStatus(model, 'idle'))
+        }
+    }
+
+    const allModelsEnabled = MODELS.every((model) => enabledModels[model])
+    const someModelsEnabled = MODELS.some((model) => enabledModels[model])
 
     const chartMetrics = useMemo(
         () =>
@@ -163,44 +177,36 @@ function MainPage() {
         setStatusMessage('')
         setHistoryMessage('')
 
-        try {
-            await Promise.all(
-                selectedModels.map(async (model) => {
-                    setModelLoading(model, true)
-                    setModelStatus(model, 'loading')
-                    setModelResult(model, '')
+        selectedModels.forEach((model) => {
+            void (async () => {
+                setModelLoading(model, true)
+                setModelStatus(model, 'loading')
+                setModelResult(model, '')
+                setModelMetrics(model, EMPTY_METRICS)
+
+                try {
+                    const { transcription, wer, cer, rtTime } =
+                        await transcribeAudio(model, file, referenceText)
+
+                    setModelResult(
+                        model,
+                        transcription || 'No transcription text in response.'
+                    )
+                    setModelMetrics(model, { wer, cer, rtTime })
+                    setModelStatus(model, 'success')
+                } catch (error) {
+                    console.error(error)
+                    setModelResult(
+                        model,
+                        'There was an error during transcription. Please try again.'
+                    )
                     setModelMetrics(model, EMPTY_METRICS)
-
-                    try {
-                        const { transcription, wer, cer, rtTime } =
-                            await transcribeAudio(model, file, referenceText)
-
-                        setModelResult(
-                            model,
-                            transcription ||
-                                'No transcription text in response.'
-                        )
-                        setModelMetrics(model, { wer, cer, rtTime })
-                        setModelStatus(model, 'success')
-                    } catch (error) {
-                        console.error(error)
-                        setModelResult(
-                            model,
-                            'There was an error during transcription. Please try again.'
-                        )
-                        setModelMetrics(model, EMPTY_METRICS)
-                        setModelStatus(model, 'error')
-                    } finally {
-                        setModelLoading(model, false)
-                    }
-                })
-            )
-        } catch (err) {
-            console.error(err)
-            setStatusMessage(
-                'There was an error during transcription. Please try again.'
-            )
-        }
+                    setModelStatus(model, 'error')
+                } finally {
+                    setModelLoading(model, false)
+                }
+            })()
+        })
     }
 
     return (
@@ -232,6 +238,22 @@ function MainPage() {
                 >
                     Save results
                 </button>
+                <label className="ml-auto flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm">
+                    <input
+                        type="checkbox"
+                        checked={allModelsEnabled}
+                        ref={(element) => {
+                            if (element) {
+                                element.indeterminate =
+                                    !allModelsEnabled && someModelsEnabled
+                            }
+                        }}
+                        onChange={(event) =>
+                            setAllModelsEnabled(event.target.checked)
+                        }
+                    />
+                    Check all
+                </label>
             </div>
 
             <div className="mb-5">
