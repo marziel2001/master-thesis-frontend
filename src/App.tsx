@@ -4,6 +4,7 @@ import AboutPage from './pages/AboutPage'
 import MainPage from './pages/MainPage'
 import LayoutPage from './pages/LayoutPage'
 import LiveTranscribePage from './pages/LiveTranscribePage'
+import ComparePage from './pages/ComparePage'
 
 function App() {
     return (
@@ -18,6 +19,7 @@ function App() {
                             path="liveTranscribe"
                             element={<LiveTranscribePage />}
                         />{' '}
+                        <Route path="compare" element={<ComparePage />} />
                     </Route>
                 </Routes>
             </BrowserRouter>

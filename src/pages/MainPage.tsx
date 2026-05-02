@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import MetricsChartPanel from '../components/MetricsChartPanel'
 import TranscriptionWidget from '../components/TranscriptionWidget'
 import { transcribeAudio } from '../requests/transcription'
+import { saveRun } from '../utils/resultsHistory'
 
 const MODELS = [
     'openai',
@@ -28,6 +30,7 @@ function MainPage() {
     const [file, setFile] = useState<File | null>(null)
     const [referenceText, setReferenceText] = useState('')
     const [statusMessage, setStatusMessage] = useState('')
+    const [historyMessage, setHistoryMessage] = useState('')
     const [results, setResults] = useState<Record<ModelName, string>>({
         openai: '',
         whisperOffline: '',
@@ -98,6 +101,61 @@ function MainPage() {
         }
     }
 
+    const chartMetrics = useMemo(
+        () =>
+            Object.fromEntries(
+                MODELS.map((model) => [
+                    model,
+                    {
+                        wer: metrics[model].wer,
+                        cer: metrics[model].cer,
+                    },
+                ])
+            ),
+        [metrics]
+    )
+
+    const hasAnyResult = MODELS.some(
+        (model) =>
+            results[model].trim().length > 0 ||
+            metrics[model].wer !== null ||
+            metrics[model].cer !== null
+    )
+
+    const handleSaveRun = () => {
+        if (!hasAnyResult) {
+            setHistoryMessage('Nothing to save yet.')
+            return
+        }
+
+        const runResults = MODELS.map((model) => ({
+            model,
+            transcription: results[model],
+            wer: metrics[model].wer,
+            cer: metrics[model].cer,
+            rtTime: metrics[model].rtTime,
+        })).filter(
+            (entry) =>
+                entry.transcription.trim().length > 0 ||
+                entry.wer !== null ||
+                entry.cer !== null
+        )
+
+        if (runResults.length === 0) {
+            setHistoryMessage('Nothing to save yet.')
+            return
+        }
+
+        saveRun({
+            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            createdAt: new Date().toISOString(),
+            referenceText,
+            results: runResults,
+        })
+
+        setHistoryMessage('Saved to local history.')
+    }
+
     const handleUpload = async () => {
         if (!file) {
             setStatusMessage('Select an audio file first.')
@@ -112,6 +170,7 @@ function MainPage() {
         }
 
         setStatusMessage('')
+        setHistoryMessage('')
 
         try {
             await Promise.all(
@@ -175,6 +234,13 @@ function MainPage() {
                 >
                     Send to selected models
                 </button>
+                <button
+                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
+                    onClick={handleSaveRun}
+                    disabled={!hasAnyResult}
+                >
+                    Save results
+                </button>
             </div>
 
             <div className="mb-5">
@@ -196,6 +262,17 @@ function MainPage() {
             {statusMessage ? (
                 <p className="mb-4 text-sm text-red-600">{statusMessage}</p>
             ) : null}
+
+            {historyMessage ? (
+                <p className="mb-4 text-sm text-green-600">{historyMessage}</p>
+            ) : null}
+
+            <div className="mb-5">
+                <MetricsChartPanel
+                    metricsByModel={chartMetrics}
+                    title="WER/CER overview"
+                />
+            </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {MODELS.map((model) => (

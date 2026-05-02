@@ -1,4 +1,5 @@
 import ColoredDiff from './ColoredDiff'
+import MetricsGrid from './MetricsGrid'
 
 type Metrics = {
     wer: number | null
@@ -27,8 +28,6 @@ export default function TranscriptionWidget({
     referenceText,
     onCheckedChange,
 }: TranscriptionWidgetProps) {
-    const hasMetrics = metrics.wer !== null && metrics.cer !== null
-    const hasTime = metrics.rtTime !== null
     const statusStyles: Record<TranscriptionWidgetProps['status'], string> = {
         idle: 'border-gray-200 bg-white',
         loading: 'border-yellow-300 bg-yellow-300',
@@ -68,26 +67,7 @@ export default function TranscriptionWidget({
                 }
             />
 
-            <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
-                <div className="rounded-md border border-gray-200 bg-gray-50 p-2">
-                    <p className="font-medium text-gray-600">WER</p>
-                    <p className="text-gray-900">
-                        {hasMetrics ? metrics.wer.toFixed(4) : '-'}
-                    </p>
-                </div>
-                <div className="rounded-md border border-gray-200 bg-gray-50 p-2">
-                    <p className="font-medium text-gray-600">CER</p>
-                    <p className="text-gray-900">
-                        {hasMetrics ? metrics.cer.toFixed(4) : '-'}
-                    </p>
-                </div>
-                <div className="rounded-md border border-gray-200 bg-gray-50 p-2">
-                    <p className="font-medium text-gray-600">Time (s)</p>
-                    <p className="text-gray-900">
-                        {hasTime ? metrics.rtTime.toFixed(2) : '-'}
-                    </p>
-                </div>
-            </div>
+            <MetricsGrid metrics={metrics} />
 
             <div
                 className={`overflow-hidden transition-[max-height,opacity,margin] duration-300 ease-out ${diffContainerClassName}`}
