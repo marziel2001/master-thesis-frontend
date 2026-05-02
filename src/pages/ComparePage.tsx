@@ -10,6 +10,7 @@ import type { StoredRun } from '../utils/resultsHistory.types'
 const EMPTY_METRICS: EntryMetrics = {
     wer: null,
     cer: null,
+    rtTime: null,
 }
 
 const createEntry = (): CompareEntry => ({
@@ -108,7 +109,7 @@ export default function ComparePage() {
 
                     updateEntry(entry.id, (current) => ({
                         ...current,
-                        metrics,
+                        metrics: { ...metrics, rtTime: null },
                         status: 'success',
                     }))
                 } catch (error) {
@@ -145,6 +146,7 @@ export default function ComparePage() {
                       metrics: {
                           wer: result.wer,
                           cer: result.cer,
+                          rtTime: result.rtTime,
                       },
                       status: 'success',
                   }))
@@ -154,15 +156,18 @@ export default function ComparePage() {
 
     const metricsByModel = useMemo(() => {
         return Object.fromEntries(
-            entries
-                .filter((entry) => entry.model.trim().length > 0)
-                .map((entry) => [
-                    entry.model,
+            entries.map((entry, index) => {
+                const label = entry.model.trim() || `Model ${index + 1}`
+
+                return [
+                    label,
                     {
                         wer: entry.metrics.wer,
                         cer: entry.metrics.cer,
+                        rtTime: entry.metrics.rtTime,
                     },
-                ])
+                ]
+            })
         )
     }, [entries])
 
@@ -305,9 +310,9 @@ export default function ComparePage() {
                             metrics={{
                                 wer: entry.metrics.wer,
                                 cer: entry.metrics.cer,
-                                rtTime: null,
+                                rtTime: entry.metrics.rtTime,
                             }}
-                            showTime={false}
+                            showTime={true}
                         />
 
                         {entry.status === 'error' ? (

@@ -1,6 +1,7 @@
 export type EntryMetrics = {
     wer: number | null
     cer: number | null
+    rtTime: number | null
 }
 
 export type EntryStatus = 'idle' | 'loading' | 'success' | 'error'

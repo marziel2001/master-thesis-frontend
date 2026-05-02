@@ -4,9 +4,12 @@ export type MetricsChartPanelProps = {
         {
             wer: number | null
             cer: number | null
+            rtTime: number | null
         }
     >
     title?: string
+    emptyTitle?: string
+    emptyDescription?: string
 }
 
 export type MetricPoint = {
@@ -17,4 +20,6 @@ export type MetricPoint = {
 export type MetricChartProps = {
     title: string
     items: MetricPoint[]
+    valueLabel?: string
+    useRelativeScale?: boolean
 }

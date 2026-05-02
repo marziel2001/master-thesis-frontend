@@ -99,6 +99,7 @@ function MainPage() {
                     {
                         wer: metrics[model].wer,
                         cer: metrics[model].cer,
+                        rtTime: metrics[model].rtTime,
                     },
                 ])
             ),
