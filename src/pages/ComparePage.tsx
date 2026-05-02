@@ -4,22 +4,8 @@ import MetricsGrid from '../components/MetricsGrid'
 import MetricsChartPanel from '../components/MetricsChartPanel'
 import { getMetrics } from '../requests/metrics'
 import { formatRunLabel, loadHistory } from '../utils/resultsHistory'
-import type { StoredRun } from '../utils/resultsHistory'
-
-type EntryMetrics = {
-    wer: number | null
-    cer: number | null
-}
-
-type EntryStatus = 'idle' | 'loading' | 'success' | 'error'
-
-type CompareEntry = {
-    id: string
-    model: string
-    text: string
-    metrics: EntryMetrics
-    status: EntryStatus
-}
+import type { CompareEntry, EntryMetrics } from './ComparePage.types'
+import type { StoredRun } from '../utils/resultsHistory.types'
 
 const EMPTY_METRICS: EntryMetrics = {
     wer: null,

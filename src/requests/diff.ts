@@ -1,14 +1,5 @@
 import { apiClient } from './api'
-
-type GetDiffHtmlParams = {
-    referenceText: string
-    hypothesisText: string
-    modelName: string
-}
-
-type GetDiffHtmlResponse = {
-    html?: unknown
-}
+import type { GetDiffHtmlParams, GetDiffHtmlResponse } from './diff.types'
 
 export async function getDiffHtml({
     referenceText,

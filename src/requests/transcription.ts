@@ -1,18 +1,10 @@
 import { apiClient } from './api'
+import type {
+    TranscriptionApiResponse,
+    TranscriptionResult,
+} from './transcription.types'
 
-export type TranscriptionResult = {
-    transcription: string
-    wer: number | null
-    cer: number | null
-    rtTime: number | null
-}
-
-type TranscriptionApiResponse = {
-    transcription?: unknown
-    wer?: unknown
-    cer?: unknown
-    rt_time?: unknown
-}
+export type { TranscriptionResult } from './transcription.types'
 
 export async function transcribeAudio(
     model: string,

@@ -1,22 +1,6 @@
 import ColoredDiff from './ColoredDiff'
 import MetricsGrid from './MetricsGrid'
-
-type Metrics = {
-    wer: number | null
-    cer: number | null
-    rtTime: number | null
-}
-
-type TranscriptionWidgetProps = {
-    model: string
-    checked: boolean
-    loading: boolean
-    status: 'idle' | 'loading' | 'success' | 'error'
-    result: string
-    metrics: Metrics
-    referenceText: string
-    onCheckedChange: (checked: boolean) => void
-}
+import type { TranscriptionWidgetProps } from './TranscriptionWidget.types'
 
 export default function TranscriptionWidget({
     model,

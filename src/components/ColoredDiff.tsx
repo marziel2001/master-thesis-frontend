@@ -1,12 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getDiffHtml } from '../requests/diff'
-
-type ColoredDiffProps = {
-    referenceText: string
-    hypothesisText: string
-    modelName: string
-    enabled: boolean
-}
+import type { ColoredDiffProps } from './ColoredDiff.types'
 
 export default function ColoredDiff({
     referenceText,

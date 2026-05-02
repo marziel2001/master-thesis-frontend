@@ -1,18 +1,8 @@
-type MetricsChartPanelProps = {
-    metricsByModel: Record<
-        string,
-        {
-            wer: number | null
-            cer: number | null
-        }
-    >
-    title?: string
-}
-
-type MetricPoint = {
-    model: string
-    value: number
-}
+import type {
+    MetricChartProps,
+    MetricPoint,
+    MetricsChartPanelProps,
+} from './MetricsChartPanel.types'
 
 function clamp01(value: number) {
     if (Number.isNaN(value)) {
@@ -21,13 +11,7 @@ function clamp01(value: number) {
     return Math.max(0, Math.min(1, value))
 }
 
-function MetricChart({
-    title,
-    items,
-}: {
-    title: string
-    items: MetricPoint[]
-}) {
+function MetricChart({ title, items }: MetricChartProps) {
     if (items.length === 0) {
         return (
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">

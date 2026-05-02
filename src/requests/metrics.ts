@@ -1,20 +1,11 @@
 import { apiClient } from './api'
+import type {
+    MetricsApiResponse,
+    MetricsRequest,
+    MetricsResult,
+} from './metrics.types'
 
-export type MetricsResult = {
-    wer: number | null
-    cer: number | null
-}
-
-type MetricsApiResponse = {
-    wer?: unknown
-    cer?: unknown
-}
-
-type MetricsRequest = {
-    referenceText: string
-    hypothesisText: string
-    normalize?: boolean
-}
+export type { MetricsResult } from './metrics.types'
 
 export async function getMetrics({
     referenceText,

@@ -3,22 +3,12 @@ import MetricsChartPanel from '../components/MetricsChartPanel'
 import TranscriptionWidget from '../components/TranscriptionWidget'
 import { transcribeAudio } from '../requests/transcription'
 import { saveRun } from '../utils/resultsHistory'
-
-const MODELS = [
-    'openai',
-    'whisperOffline',
-    'whisperX',
-    'googleStt',
-    'azureStt',
-    'amazonStt',
-] as const
-type ModelName = (typeof MODELS)[number]
-type ModelMetrics = {
-    wer: number | null
-    cer: number | null
-    rtTime: number | null
-}
-type ModelStatus = 'idle' | 'loading' | 'success' | 'error'
+import {
+    MODELS,
+    type ModelMetrics,
+    type ModelName,
+    type ModelStatus,
+} from './MainPage.types'
 
 const EMPTY_METRICS: ModelMetrics = {
     wer: null,

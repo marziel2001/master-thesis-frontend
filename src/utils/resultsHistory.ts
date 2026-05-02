@@ -1,17 +1,6 @@
-export type StoredResult = {
-    model: string
-    transcription: string
-    wer: number | null
-    cer: number | null
-    rtTime: number | null
-}
+import type { StoredRun } from './resultsHistory.types'
 
-export type StoredRun = {
-    id: string
-    createdAt: string
-    referenceText: string
-    results: StoredResult[]
-}
+export type { StoredResult, StoredRun } from './resultsHistory.types'
 
 const STORAGE_KEY = 'transcriptionHistoryV1'
 const STORAGE_LIMIT = 10
