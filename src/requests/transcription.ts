@@ -4,12 +4,14 @@ export type TranscriptionResult = {
     transcription: string
     wer: number | null
     cer: number | null
+    rtTime: number | null
 }
 
 type TranscriptionApiResponse = {
     transcription?: unknown
     wer?: unknown
     cer?: unknown
+    rt_time?: unknown
 }
 
 export async function transcribeAudio(
@@ -37,6 +39,10 @@ export async function transcribeAudio(
         typeof response.data?.wer === 'number' ? response.data.wer : null
     const cer =
         typeof response.data?.cer === 'number' ? response.data.cer : null
+    const rtTime =
+        typeof response.data?.rt_time === 'number'
+            ? response.data.rt_time
+            : null
 
-    return { transcription, wer, cer }
+    return { transcription, wer, cer, rtTime }
 }

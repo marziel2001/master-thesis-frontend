@@ -5,6 +5,7 @@ import { transcribeAudio } from '../requests/transcription'
 const MODELS = [
     'openai',
     'whisperOffline',
+    'whisperX',
     'googleStt',
     'azureStt',
     'amazonStt',
@@ -13,12 +14,14 @@ type ModelName = (typeof MODELS)[number]
 type ModelMetrics = {
     wer: number | null
     cer: number | null
+    rtTime: number | null
 }
 type ModelStatus = 'idle' | 'loading' | 'success' | 'error'
 
 const EMPTY_METRICS: ModelMetrics = {
     wer: null,
     cer: null,
+    rtTime: null,
 }
 
 function MainPage() {
@@ -28,6 +31,7 @@ function MainPage() {
     const [results, setResults] = useState<Record<ModelName, string>>({
         openai: '',
         whisperOffline: '',
+        whisperX: '',
         googleStt: '',
         azureStt: '',
         amazonStt: '',
@@ -35,6 +39,7 @@ function MainPage() {
     const [metrics, setMetrics] = useState<Record<ModelName, ModelMetrics>>({
         openai: EMPTY_METRICS,
         whisperOffline: EMPTY_METRICS,
+        whisperX: EMPTY_METRICS,
         googleStt: EMPTY_METRICS,
         azureStt: EMPTY_METRICS,
         amazonStt: EMPTY_METRICS,
@@ -44,6 +49,7 @@ function MainPage() {
     >({
         openai: false,
         whisperOffline: false,
+        whisperX: false,
         googleStt: false,
         azureStt: false,
         amazonStt: false,
@@ -53,6 +59,7 @@ function MainPage() {
     >({
         openai: 'idle',
         whisperOffline: 'idle',
+        whisperX: 'idle',
         googleStt: 'idle',
         azureStt: 'idle',
         amazonStt: 'idle',
@@ -62,6 +69,7 @@ function MainPage() {
     >({
         openai: true,
         whisperOffline: true,
+        whisperX: true,
         googleStt: true,
         azureStt: true,
         amazonStt: true,
@@ -114,7 +122,7 @@ function MainPage() {
                     setModelMetrics(model, EMPTY_METRICS)
 
                     try {
-                        const { transcription, wer, cer } =
+                        const { transcription, wer, cer, rtTime } =
                             await transcribeAudio(model, file, referenceText)
 
                         setModelResult(
@@ -122,7 +130,7 @@ function MainPage() {
                             transcription ||
                                 'No transcription text in response.'
                         )
-                        setModelMetrics(model, { wer, cer })
+                        setModelMetrics(model, { wer, cer, rtTime })
                         setModelStatus(model, 'success')
                     } catch (error) {
                         console.error(error)
