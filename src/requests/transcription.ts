@@ -35,6 +35,31 @@ export async function transcribeAudio(
         typeof response.data?.rt_time === 'number'
             ? response.data.rt_time
             : null
+    const modelName =
+        typeof response.data?.model_name === 'string'
+            ? response.data.model_name
+            : ''
+    const modelVersion =
+        typeof response.data?.model_version === 'string'
+            ? response.data.model_version
+            : ''
+    const computeTime =
+        typeof response.data?.compute_time === 'number'
+            ? response.data.compute_time
+            : null
+    const outputFile =
+        typeof response.data?.output_file === 'string'
+            ? response.data.output_file
+            : null
 
-    return { transcription, wer, cer, rtTime }
+    return {
+        transcription,
+        wer,
+        cer,
+        rtTime,
+        modelName,
+        modelVersion,
+        computeTime,
+        outputFile,
+    }
 }

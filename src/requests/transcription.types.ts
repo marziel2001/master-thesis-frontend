@@ -3,6 +3,10 @@ export type TranscriptionResult = {
     wer: number | null
     cer: number | null
     rtTime: number | null
+    modelName: string
+    modelVersion: string
+    computeTime: number | null
+    outputFile: string | null
 }
 
 export type TranscriptionApiResponse = {
@@ -10,4 +14,8 @@ export type TranscriptionApiResponse = {
     wer?: unknown
     cer?: unknown
     rt_time?: unknown
+    model_name?: unknown
+    model_version?: unknown
+    compute_time?: unknown
+    output_file?: unknown
 }
