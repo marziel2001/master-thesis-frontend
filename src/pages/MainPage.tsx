@@ -56,11 +56,11 @@ function MainPage() {
     const [enabledModels, setEnabledModels] = useState<
         Record<ModelName, boolean>
     >({
-        openai: true,
-        whisperOffline: true,
-        googleStt: true,
-        azureStt: true,
-        amazonStt: true,
+        openai: false,
+        whisperOffline: false,
+        googleStt: false,
+        azureStt: false,
+        amazonStt: false,
     })
 
     const setModelLoading = (model: ModelName, loading: boolean) => {
@@ -103,8 +103,6 @@ function MainPage() {
     }
 
     const allModelsEnabled = MODELS.every((model) => enabledModels[model])
-    const someModelsEnabled = MODELS.some((model) => enabledModels[model])
-
     const chartMetrics = useMemo(
         () =>
             Object.fromEntries(
@@ -238,22 +236,6 @@ function MainPage() {
                 >
                     Save results
                 </button>
-                <label className="ml-auto flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm">
-                    <input
-                        type="checkbox"
-                        checked={allModelsEnabled}
-                        ref={(element) => {
-                            if (element) {
-                                element.indeterminate =
-                                    !allModelsEnabled && someModelsEnabled
-                            }
-                        }}
-                        onChange={(event) =>
-                            setAllModelsEnabled(event.target.checked)
-                        }
-                    />
-                    Check all
-                </label>
             </div>
 
             <div className="mb-5">
@@ -285,6 +267,16 @@ function MainPage() {
                     metricsByModel={chartMetrics}
                     title="WER/CER overview"
                 />
+            </div>
+
+            <div className="mb-4 flex items-center justify-end">
+                <button
+                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition active:translate-y-px active:shadow-none"
+                    onClick={() => setAllModelsEnabled(!allModelsEnabled)}
+                    type="button"
+                >
+                    {allModelsEnabled ? 'Uncheck all' : 'Check all'}
+                </button>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">

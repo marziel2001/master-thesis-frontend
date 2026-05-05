@@ -17,9 +17,9 @@ export default function Navbar() {
                 <NavLink className={getLinkStyle} to="/">
                     Transkrypcja Pliku
                 </NavLink>
-                <NavLink className={getLinkStyle} to="/liveTranscribe">
+                {/* <NavLink className={getLinkStyle} to="/liveTranscribe">
                     Transkrypcja na żywo
-                </NavLink>
+                </NavLink> */}
                 <NavLink className={getLinkStyle} to="/compare">
                     Diff & Metrics
                 </NavLink>
