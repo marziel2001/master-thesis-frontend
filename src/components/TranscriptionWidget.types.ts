@@ -13,4 +13,6 @@ export type TranscriptionWidgetProps = {
     metrics: Metrics
     referenceText: string
     onCheckedChange: (checked: boolean) => void
+    onRerun: () => void
+    canRerun: boolean
 }

@@ -84,6 +84,46 @@ function MainPage() {
         setStatusByModel((previous) => ({ ...previous, [model]: status }))
     }
 
+    const runTranscriptionForModel = async (model: ModelName) => {
+        if (!file) {
+            setStatusMessage('Select an audio file first.')
+            return
+        }
+
+        setStatusMessage('')
+        setHistoryMessage('')
+
+        setModelLoading(model, true)
+        setModelStatus(model, 'loading')
+        setModelResult(model, '')
+        setModelMetrics(model, EMPTY_METRICS)
+
+        try {
+            const { transcription, wer, cer, rtTime } = await transcribeAudio(
+                model,
+                file,
+                referenceText
+            )
+
+            setModelResult(
+                model,
+                transcription || 'No transcription text in response.'
+            )
+            setModelMetrics(model, { wer, cer, rtTime })
+            setModelStatus(model, 'success')
+        } catch (error) {
+            console.error(error)
+            setModelResult(
+                model,
+                'There was an error during transcription. Please try again.'
+            )
+            setModelMetrics(model, EMPTY_METRICS)
+            setModelStatus(model, 'error')
+        } finally {
+            setModelLoading(model, false)
+        }
+    }
+
     const updateModelEnabled = (model: ModelName, enabled: boolean) => {
         setEnabledModels((previous) => ({ ...previous, [model]: enabled }))
         if (!enabled) {
@@ -181,34 +221,7 @@ function MainPage() {
         setHistoryMessage('')
 
         selectedModels.forEach((model) => {
-            void (async () => {
-                setModelLoading(model, true)
-                setModelStatus(model, 'loading')
-                setModelResult(model, '')
-                setModelMetrics(model, EMPTY_METRICS)
-
-                try {
-                    const { transcription, wer, cer, rtTime } =
-                        await transcribeAudio(model, file, referenceText)
-
-                    setModelResult(
-                        model,
-                        transcription || 'No transcription text in response.'
-                    )
-                    setModelMetrics(model, { wer, cer, rtTime })
-                    setModelStatus(model, 'success')
-                } catch (error) {
-                    console.error(error)
-                    setModelResult(
-                        model,
-                        'There was an error during transcription. Please try again.'
-                    )
-                    setModelMetrics(model, EMPTY_METRICS)
-                    setModelStatus(model, 'error')
-                } finally {
-                    setModelLoading(model, false)
-                }
-            })()
+            void runTranscriptionForModel(model)
         })
     }
 
@@ -298,6 +311,10 @@ function MainPage() {
                         onCheckedChange={(checked) =>
                             updateModelEnabled(model, checked)
                         }
+                        onRerun={() => {
+                            void runTranscriptionForModel(model)
+                        }}
+                        canRerun={file !== null}
                     />
                 ))}
             </div>

@@ -20,6 +20,8 @@ export default function TranscriptionWidget({
     metrics,
     referenceText,
     onCheckedChange,
+    onRerun,
+    canRerun,
 }: TranscriptionWidgetProps) {
     const statusStyles: Record<TranscriptionWidgetProps['status'], string> = {
         idle: 'border-gray-200 bg-white',
@@ -37,17 +39,30 @@ export default function TranscriptionWidget({
                 statusStyles[status]
             }`}
         >
-            <label className="mb-3 flex items-center justify-between gap-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-gray-800">
                     {MODEL_LABELS[model] ?? model}
                 </span>
-                <input
-                    type="checkbox"
-                    className="h-4 w-4"
-                    checked={checked}
-                    onChange={(event) => onCheckedChange(event.target.checked)}
-                />
-            </label>
+                <div className="flex items-center gap-2">
+                    <button
+                        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+                        onClick={onRerun}
+                        type="button"
+                        disabled={!canRerun || loading}
+                        title="Run this model again with the current audio file"
+                    >
+                        Rerun
+                    </button>
+                    <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={checked}
+                        onChange={(event) =>
+                            onCheckedChange(event.target.checked)
+                        }
+                    />
+                </div>
+            </div>
 
             <textarea
                 className="min-h-32 w-full resize-y rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"
