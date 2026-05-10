@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import MetricsChartPanel from '../components/MetricsChartPanel'
 import TranscriptionWidget from '../components/TranscriptionWidget'
+import { getMetrics } from '../requests/metrics'
 import { transcribeAudio } from '../requests/transcription'
 import { saveRun } from '../utils/resultsHistory'
 import {
@@ -47,6 +48,16 @@ function MainPage() {
         azureStt: false,
         amazonStt: false,
     })
+    const [metricsLoadingState, setMetricsLoadingState] = useState<
+        Record<ModelName, boolean>
+    >({
+        openai: false,
+        whisperOffline: false,
+        whisperX: false,
+        googleStt: false,
+        azureStt: false,
+        amazonStt: false,
+    })
     const [statusByModel, setStatusByModel] = useState<
         Record<ModelName, ModelStatus>
     >({
@@ -82,6 +93,13 @@ function MainPage() {
 
     const setModelStatus = (model: ModelName, status: ModelStatus) => {
         setStatusByModel((previous) => ({ ...previous, [model]: status }))
+    }
+
+    const setModelMetricsLoading = (model: ModelName, loading: boolean) => {
+        setMetricsLoadingState((previous) => ({
+            ...previous,
+            [model]: loading,
+        }))
     }
 
     const runTranscriptionForModel = async (model: ModelName) => {
@@ -121,6 +139,38 @@ function MainPage() {
             setModelStatus(model, 'error')
         } finally {
             setModelLoading(model, false)
+        }
+    }
+
+    const recalculateMetricsForModel = async (model: ModelName) => {
+        const transcription = results[model].trim()
+        const reference = referenceText.trim()
+
+        if (!transcription || !reference) {
+            return
+        }
+
+        setStatusMessage('')
+        setHistoryMessage('')
+        setModelMetricsLoading(model, true)
+
+        try {
+            const { wer, cer } = await getMetrics({
+                referenceText: reference,
+                hypothesisText: transcription,
+                normalize: true,
+            })
+
+            setModelMetrics(model, {
+                wer,
+                cer,
+                rtTime: metrics[model].rtTime,
+            })
+        } catch (error) {
+            console.error(error)
+            setStatusMessage('Failed to recalculate metrics. Please try again.')
+        } finally {
+            setModelMetricsLoading(model, false)
         }
     }
 
@@ -304,6 +354,7 @@ function MainPage() {
                         model={model}
                         checked={enabledModels[model]}
                         loading={loadingState[model]}
+                        metricsLoading={metricsLoadingState[model]}
                         status={statusByModel[model]}
                         result={results[model]}
                         metrics={metrics[model]}
@@ -314,7 +365,14 @@ function MainPage() {
                         onRerun={() => {
                             void runTranscriptionForModel(model)
                         }}
+                        onRecalculateMetrics={() => {
+                            void recalculateMetricsForModel(model)
+                        }}
                         canRerun={file !== null}
+                        canRecalculateMetrics={
+                            results[model].trim().length > 0 &&
+                            referenceText.trim().length > 0
+                        }
                     />
                 ))}
             </div>

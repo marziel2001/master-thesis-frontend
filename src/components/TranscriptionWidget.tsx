@@ -15,13 +15,16 @@ export default function TranscriptionWidget({
     model,
     checked,
     loading,
+    metricsLoading,
     status,
     result,
     metrics,
     referenceText,
     onCheckedChange,
     onRerun,
+    onRecalculateMetrics,
     canRerun,
+    canRecalculateMetrics,
 }: TranscriptionWidgetProps) {
     const statusStyles: Record<TranscriptionWidgetProps['status'], string> = {
         idle: 'border-gray-200 bg-white',
@@ -52,6 +55,17 @@ export default function TranscriptionWidget({
                         title="Run this model again with the current audio file"
                     >
                         Rerun
+                    </button>
+                    <button
+                        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+                        onClick={onRecalculateMetrics}
+                        type="button"
+                        disabled={!canRecalculateMetrics || metricsLoading}
+                        title="Recalculate metrics for the current transcription"
+                    >
+                        {metricsLoading
+                            ? 'Recalculating...'
+                            : 'Recalculate metrics'}
                     </button>
                     <input
                         type="checkbox"
