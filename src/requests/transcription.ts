@@ -17,10 +17,37 @@ export async function transcribeAudio(
         formData.append('reference_text', referenceText)
     }
 
-    const response = await apiClient.post<TranscriptionApiResponse>(
-        `/api/transcribe/${model}`,
-        formData
-    )
+    const requestPath = `/api/transcribe/${model}`
+
+    console.log('[backend] sending transcription request', {
+        baseURL: apiClient.defaults.baseURL,
+        requestPath,
+        fileName: file.name,
+        model,
+    })
+
+    let response
+    try {
+        response = await apiClient.post<TranscriptionApiResponse>(
+            requestPath,
+            formData
+        )
+    } catch (error) {
+        console.error('[backend] transcription request failed', {
+            baseURL: apiClient.defaults.baseURL,
+            requestPath,
+            model,
+            error,
+        })
+        throw error
+    }
+
+    console.log('[backend] transcription request succeeded', {
+        baseURL: apiClient.defaults.baseURL,
+        requestPath,
+        model,
+        status: response.status,
+    })
 
     const transcription =
         typeof response.data?.transcription === 'string'
