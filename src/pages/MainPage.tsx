@@ -1,15 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import ColoredDiff from '../components/ColoredDiff'
 import MetricsChartPanel from '../components/MetricsChartPanel'
-import TranscriptionWidget from '../components/TranscriptionWidget'
+import MetricsGrid from '../components/MetricsGrid'
+import TranscriptionCard from '../components/TranscriptionCard'
+import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
 import { transcribeAudio } from '../requests/transcription'
-import { saveRun } from '../utils/resultsHistory'
-import {
-    MODELS,
-    type ModelMetrics,
-    type ModelName,
-    type ModelStatus,
-} from './MainPage.types'
+import { saveRunSafe } from '../utils/resultsHistory'
+import { type ModelMetrics, type ModelStatus } from './MainPage.types'
 
 const EMPTY_METRICS: ModelMetrics = {
     wer: null,
@@ -18,92 +16,94 @@ const EMPTY_METRICS: ModelMetrics = {
 }
 
 type FinishedModelResult = {
-    model: ModelName
+    model: string
     transcription: string
     wer: number | null
     cer: number | null
     rtTime: number | null
+    modelVersion?: string
 }
 
+const buildModelRecord = <T,>(
+    models: Array<{ id: string }>,
+    createValue: (modelId: string) => T
+): Record<string, T> =>
+    Object.fromEntries(
+        models.map((model) => [model.id, createValue(model.id)])
+    ) as Record<string, T>
+
 function MainPage() {
+    const {
+        models,
+        loading: modelCatalogLoading,
+        error: modelCatalogError,
+        getModelLabel,
+        getDefaultVariant,
+        getVariants,
+    } = useModelCatalog()
     const [file, setFile] = useState<File | null>(null)
     const [referenceText, setReferenceText] = useState('')
     const [statusMessage, setStatusMessage] = useState('')
     const [historyMessage, setHistoryMessage] = useState('')
-    const [results, setResults] = useState<Record<ModelName, string>>({
-        openai: '',
-        whisperOffline: '',
-        whisperX: '',
-        googleStt: '',
-        azureStt: '',
-        amazonStt: '',
-    })
-    const [metrics, setMetrics] = useState<Record<ModelName, ModelMetrics>>({
-        openai: EMPTY_METRICS,
-        whisperOffline: EMPTY_METRICS,
-        whisperX: EMPTY_METRICS,
-        googleStt: EMPTY_METRICS,
-        azureStt: EMPTY_METRICS,
-        amazonStt: EMPTY_METRICS,
-    })
-    const [loadingState, setLoadingState] = useState<
-        Record<ModelName, boolean>
-    >({
-        openai: false,
-        whisperOffline: false,
-        whisperX: false,
-        googleStt: false,
-        azureStt: false,
-        amazonStt: false,
-    })
+    const [results, setResults] = useState<Record<string, string>>({})
+    const [metrics, setMetrics] = useState<Record<string, ModelMetrics>>({})
+    const [loadingState, setLoadingState] = useState<Record<string, boolean>>(
+        {}
+    )
     const [metricsLoadingState, setMetricsLoadingState] = useState<
-        Record<ModelName, boolean>
-    >({
-        openai: false,
-        whisperOffline: false,
-        whisperX: false,
-        googleStt: false,
-        azureStt: false,
-        amazonStt: false,
-    })
+        Record<string, boolean>
+    >({})
     const [statusByModel, setStatusByModel] = useState<
-        Record<ModelName, ModelStatus>
-    >({
-        openai: 'idle',
-        whisperOffline: 'idle',
-        whisperX: 'idle',
-        googleStt: 'idle',
-        azureStt: 'idle',
-        amazonStt: 'idle',
-    })
-    const [enabledModels, setEnabledModels] = useState<
-        Record<ModelName, boolean>
-    >({
-        openai: false,
-        whisperOffline: false,
-        whisperX: false,
-        googleStt: false,
-        azureStt: false,
-        amazonStt: false,
-    })
+        Record<string, ModelStatus>
+    >({})
+    const [enabledModels, setEnabledModels] = useState<Record<string, boolean>>(
+        {}
+    )
+    const [modelVersions, setModelVersions] = useState<Record<string, string>>(
+        {}
+    )
+    const [modelVariants, setModelVariants] = useState<Record<string, string>>(
+        {}
+    )
 
-    const setModelLoading = (model: ModelName, loading: boolean) => {
+    useEffect(() => {
+        if (models.length === 0) {
+            return
+        }
+
+        setResults(buildModelRecord(models, () => ''))
+        setMetrics(buildModelRecord(models, () => EMPTY_METRICS))
+        setLoadingState(buildModelRecord(models, () => false))
+        setMetricsLoadingState(buildModelRecord(models, () => false))
+        setStatusByModel(buildModelRecord(models, () => 'idle'))
+        setEnabledModels(buildModelRecord(models, () => false))
+        setModelVersions(buildModelRecord(models, () => ''))
+        setModelVariants(
+            buildModelRecord(models, (modelId) => getDefaultVariant(modelId))
+        )
+    }, [models, getDefaultVariant])
+
+    const setModelLoading = (model: string, loading: boolean) => {
         setLoadingState((previous) => ({ ...previous, [model]: loading }))
     }
 
-    const setModelResult = (model: ModelName, text: string) => {
+    const setModelResult = (model: string, text: string) => {
         setResults((previous) => ({ ...previous, [model]: text }))
     }
 
-    const setModelMetrics = (model: ModelName, value: ModelMetrics) => {
+    const setModelMetrics = (model: string, value: ModelMetrics) => {
         setMetrics((previous) => ({ ...previous, [model]: value }))
     }
 
-    const setModelStatus = (model: ModelName, status: ModelStatus) => {
+    const setModelStatus = (model: string, status: ModelStatus) => {
         setStatusByModel((previous) => ({ ...previous, [model]: status }))
     }
 
-    const setModelMetricsLoading = (model: ModelName, loading: boolean) => {
+    const setModelVersion = (model: string, version: string) => {
+        setModelVersions((previous) => ({ ...previous, [model]: version }))
+    }
+
+    const setModelMetricsLoading = (model: string, loading: boolean) => {
         setMetricsLoadingState((previous) => ({
             ...previous,
             [model]: loading,
@@ -111,7 +111,7 @@ function MainPage() {
     }
 
     const runTranscriptionForModel = async (
-        model: ModelName
+        model: string
     ): Promise<FinishedModelResult | null> => {
         if (!file) {
             setStatusMessage('Select an audio file first.')
@@ -127,11 +127,14 @@ function MainPage() {
         setModelMetrics(model, EMPTY_METRICS)
 
         try {
-            const { transcription, wer, cer, rtTime } = await transcribeAudio(
-                model,
-                file,
-                referenceText
-            )
+            const selectedVariant = modelVariants[model] || ''
+            const { transcription, wer, cer, rtTime, modelVersion } =
+                await transcribeAudio(
+                    model,
+                    file,
+                    referenceText,
+                    selectedVariant
+                )
 
             setModelResult(
                 model,
@@ -139,6 +142,7 @@ function MainPage() {
             )
             setModelMetrics(model, { wer, cer, rtTime })
             setModelStatus(model, 'success')
+            setModelVersion(model, modelVersion || selectedVariant)
 
             return {
                 model,
@@ -147,6 +151,7 @@ function MainPage() {
                 wer,
                 cer,
                 rtTime,
+                modelVersion: modelVersion || selectedVariant,
             }
         } catch (error) {
             console.error(error)
@@ -162,8 +167,8 @@ function MainPage() {
         }
     }
 
-    const recalculateMetricsForModel = async (model: ModelName) => {
-        const transcription = results[model].trim()
+    const recalculateMetricsForModel = async (model: string) => {
+        const transcription = results[model]?.trim() ?? ''
         const reference = referenceText.trim()
 
         if (!transcription || !reference) {
@@ -184,7 +189,7 @@ function MainPage() {
             setModelMetrics(model, {
                 wer,
                 cer,
-                rtTime: metrics[model].rtTime,
+                rtTime: metrics[model]?.rtTime ?? null,
             })
         } catch (error) {
             console.error(error)
@@ -194,51 +199,55 @@ function MainPage() {
         }
     }
 
-    const updateModelEnabled = (model: ModelName, enabled: boolean) => {
+    const updateModelEnabled = (model: string, enabled: boolean) => {
         setEnabledModels((previous) => ({ ...previous, [model]: enabled }))
         if (!enabled) {
             setModelStatus(model, 'idle')
         }
     }
 
+    const updateModelVariant = (model: string, variant: string) => {
+        setModelVariants((previous) => ({ ...previous, [model]: variant }))
+    }
+
     const setAllModelsEnabled = (enabled: boolean) => {
-        setEnabledModels(
-            MODELS.reduce(
-                (next, model) => ({
-                    ...next,
-                    [model]: enabled,
-                }),
-                {} as Record<ModelName, boolean>
-            )
-        )
+        if (models.length === 0) {
+            return
+        }
+
+        setEnabledModels(buildModelRecord(models, () => enabled))
 
         if (!enabled) {
-            MODELS.forEach((model) => setModelStatus(model, 'idle'))
+            models.forEach((model) => setModelStatus(model.id, 'idle'))
         }
     }
 
-    const allModelsEnabled = MODELS.every((model) => enabledModels[model])
+    const allModelsEnabled =
+        models.length > 0 && models.every((model) => enabledModels[model.id])
     const chartMetrics = useMemo(
         () =>
             Object.fromEntries(
-                MODELS.map((model) => [
-                    model,
+                models.map((model) => [
+                    model.id,
                     {
-                        wer: metrics[model].wer,
-                        cer: metrics[model].cer,
-                        rtTime: metrics[model].rtTime,
+                        wer: metrics[model.id]?.wer ?? null,
+                        cer: metrics[model.id]?.cer ?? null,
+                        rtTime: metrics[model.id]?.rtTime ?? null,
                     },
                 ])
             ),
-        [metrics]
+        [metrics, models]
     )
 
-    const hasAnyResult = MODELS.some(
-        (model) =>
-            results[model].trim().length > 0 ||
-            metrics[model].wer !== null ||
-            metrics[model].cer !== null
-    )
+    const hasAnyResult = models.some((model) => {
+        const entry = results[model.id] ?? ''
+        const modelMetrics = metrics[model.id] ?? EMPTY_METRICS
+        return (
+            entry.trim().length > 0 ||
+            modelMetrics.wer !== null ||
+            modelMetrics.cer !== null
+        )
+    })
 
     const handleSaveRun = () => {
         if (!hasAnyResult) {
@@ -246,30 +255,44 @@ function MainPage() {
             return
         }
 
-        const runResults = MODELS.map((model) => ({
-            model,
-            transcription: results[model],
-            wer: metrics[model].wer,
-            cer: metrics[model].cer,
-            rtTime: metrics[model].rtTime,
-        })).filter(
-            (entry) =>
-                entry.transcription.trim().length > 0 ||
-                entry.wer !== null ||
-                entry.cer !== null
-        )
+        const runResults = models
+            .map((model) => {
+                const resolvedVersion =
+                    modelVersions[model.id] || modelVariants[model.id] || ''
+                return {
+                    model: model.id,
+                    modelVersion: resolvedVersion || undefined,
+                    transcription: results[model.id] ?? '',
+                    wer: metrics[model.id]?.wer ?? null,
+                    cer: metrics[model.id]?.cer ?? null,
+                    rtTime: metrics[model.id]?.rtTime ?? null,
+                }
+            })
+            .filter(
+                (entry) =>
+                    entry.transcription.trim().length > 0 ||
+                    entry.wer !== null ||
+                    entry.cer !== null
+            )
 
         if (runResults.length === 0) {
             setHistoryMessage('Nothing to save yet.')
             return
         }
 
-        saveRun({
+        const saveResult = saveRunSafe({
             id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
             createdAt: new Date().toISOString(),
             referenceText,
             results: runResults,
         })
+
+        if (!saveResult.ok) {
+            setHistoryMessage(
+                `Failed to save history. ${saveResult.error ?? ''}`.trim()
+            )
+            return
+        }
 
         setHistoryMessage('Saved to local history.')
     }
@@ -280,12 +303,19 @@ function MainPage() {
             return
         }
 
-        saveRun({
+        const saveResult = saveRunSafe({
             id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
             createdAt: new Date().toISOString(),
             referenceText,
             results: batchResults,
         })
+
+        if (!saveResult.ok) {
+            setHistoryMessage(
+                `Failed to save history. ${saveResult.error ?? ''}`.trim()
+            )
+            return
+        }
 
         setHistoryMessage('Saved to local history.')
     }
@@ -296,7 +326,20 @@ function MainPage() {
             return
         }
 
-        const selectedModels = MODELS.filter((model) => enabledModels[model])
+        if (modelCatalogLoading) {
+            setStatusMessage('Model catalog is still loading. Please wait.')
+            return
+        }
+
+        if (modelCatalogError) {
+            setStatusMessage(
+                'Failed to load model catalog. Refresh and try again.'
+            )
+            return
+        }
+        const selectedModels = models
+            .filter((model) => enabledModels[model.id])
+            .map((model) => model.id)
 
         if (selectedModels.length === 0) {
             setStatusMessage('Select at least one transcription model.')
@@ -345,7 +388,10 @@ function MainPage() {
                 <button
                     className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"
                     onClick={handleUpload}
-                    disabled={MODELS.every((model) => !enabledModels[model])}
+                    disabled={
+                        models.length === 0 ||
+                        models.every((model) => !enabledModels[model.id])
+                    }
                 >
                     Send to selected models
                 </button>
@@ -378,6 +424,10 @@ function MainPage() {
                 <p className="mb-4 text-sm text-red-600">{statusMessage}</p>
             ) : null}
 
+            {modelCatalogError ? (
+                <p className="mb-4 text-sm text-red-600">{modelCatalogError}</p>
+            ) : null}
+
             {historyMessage ? (
                 <p className="mb-4 text-sm text-green-600">{historyMessage}</p>
             ) : null}
@@ -400,33 +450,145 @@ function MainPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {MODELS.map((model) => (
-                    <TranscriptionWidget
-                        key={model}
-                        model={model}
-                        checked={enabledModels[model]}
-                        loading={loadingState[model]}
-                        metricsLoading={metricsLoadingState[model]}
-                        status={statusByModel[model]}
-                        result={results[model]}
-                        metrics={metrics[model]}
-                        referenceText={referenceText}
-                        onCheckedChange={(checked) =>
-                            updateModelEnabled(model, checked)
-                        }
-                        onRerun={() => {
-                            void runTranscriptionForModel(model)
-                        }}
-                        onRecalculateMetrics={() => {
-                            void recalculateMetricsForModel(model)
-                        }}
-                        canRerun={file !== null}
-                        canRecalculateMetrics={
-                            results[model].trim().length > 0 &&
-                            referenceText.trim().length > 0
-                        }
-                    />
-                ))}
+                {models.map((model) => {
+                    const modelId = model.id
+                    const modelLabel = getModelLabel(modelId)
+                    const modelVariantOptions = getVariants(modelId)
+                    const selectedVariant = modelVariants[modelId] || ''
+                    const usedVariant = modelVersions[modelId] || ''
+                    const metricsEntry = metrics[modelId] ?? EMPTY_METRICS
+                    const transcriptionText = results[modelId] ?? ''
+                    const isChecked = enabledModels[modelId] ?? false
+                    const diffContainerClassName = isChecked
+                        ? 'max-h-[9999px] opacity-100 mt-3'
+                        : 'max-h-0 opacity-0 mt-0'
+                    const diffLabel = usedVariant
+                        ? `${modelLabel} (${usedVariant})`
+                        : modelLabel
+
+                    return (
+                        <TranscriptionCard
+                            key={modelId}
+                            status={statusByModel[modelId] ?? 'idle'}
+                            title={modelLabel}
+                            subtitle={
+                                usedVariant
+                                    ? `Model used: ${usedVariant}`
+                                    : undefined
+                            }
+                            headerExtras={
+                                modelVariantOptions.length > 0 ? (
+                                    <>
+                                        <label className="text-xs font-semibold text-gray-600">
+                                            Model
+                                        </label>
+                                        <select
+                                            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs"
+                                            value={selectedVariant}
+                                            onChange={(event) =>
+                                                updateModelVariant(
+                                                    modelId,
+                                                    event.target.value
+                                                )
+                                            }
+                                        >
+                                            {modelVariantOptions.map(
+                                                (variant) => (
+                                                    <option
+                                                        key={variant}
+                                                        value={variant}
+                                                    >
+                                                        {variant}
+                                                    </option>
+                                                )
+                                            )}
+                                        </select>
+                                    </>
+                                ) : null
+                            }
+                            headerActions={
+                                <>
+                                    <button
+                                        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+                                        onClick={() =>
+                                            void runTranscriptionForModel(
+                                                modelId
+                                            )
+                                        }
+                                        type="button"
+                                        disabled={
+                                            file === null ||
+                                            loadingState[modelId] === true
+                                        }
+                                        title="Run this model again with the current audio file"
+                                    >
+                                        Rerun
+                                    </button>
+                                    <button
+                                        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+                                        onClick={() =>
+                                            void recalculateMetricsForModel(
+                                                modelId
+                                            )
+                                        }
+                                        type="button"
+                                        disabled={
+                                            transcriptionText.trim().length ===
+                                                0 ||
+                                            referenceText.trim().length === 0 ||
+                                            metricsLoadingState[modelId] ===
+                                                true
+                                        }
+                                        title="Recalculate metrics for the current transcription"
+                                    >
+                                        {metricsLoadingState[modelId]
+                                            ? 'Recalculating...'
+                                            : 'Recalculate metrics'}
+                                    </button>
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4"
+                                        checked={isChecked}
+                                        onChange={(event) =>
+                                            updateModelEnabled(
+                                                modelId,
+                                                event.target.checked
+                                            )
+                                        }
+                                    />
+                                </>
+                            }
+                        >
+                            <textarea
+                                className="min-h-32 w-full resize-y rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"
+                                readOnly
+                                value={
+                                    loadingState[modelId]
+                                        ? 'Transcribing...'
+                                        : transcriptionText
+                                }
+                                placeholder={
+                                    isChecked
+                                        ? 'Result will appear here'
+                                        : 'Enable this model to include it in transcription'
+                                }
+                            />
+
+                            <MetricsGrid metrics={metricsEntry} />
+
+                            <div
+                                className={`overflow-hidden transition-[max-height,opacity,margin] duration-300 ease-out ${diffContainerClassName}`}
+                            >
+                                <ColoredDiff
+                                    enabled={isChecked}
+                                    referenceText={referenceText}
+                                    hypothesisText={transcriptionText}
+                                    modelName={diffLabel}
+                                />
+                            </div>
+                        </TranscriptionCard>
+                    )
+                })}
             </div>
         </div>
     )

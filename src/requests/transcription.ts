@@ -9,12 +9,16 @@ export type { TranscriptionResult } from './transcription.types'
 export async function transcribeAudio(
     model: string,
     file: File,
-    referenceText?: string
+    referenceText?: string,
+    modelVariant?: string
 ): Promise<TranscriptionResult> {
     const formData = new FormData()
     formData.append('file', file)
     if (referenceText && referenceText.trim().length > 0) {
         formData.append('reference_text', referenceText)
+    }
+    if (modelVariant && modelVariant.trim().length > 0) {
+        formData.append('model_variant', modelVariant)
     }
 
     const requestPath = `/api/transcribe/${model}`

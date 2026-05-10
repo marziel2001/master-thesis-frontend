@@ -1,5 +1,6 @@
 export type StoredResult = {
     model: string
+    modelVersion?: string
     transcription: string
     wer: number | null
     cer: number | null

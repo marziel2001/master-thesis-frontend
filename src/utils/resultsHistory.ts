@@ -40,11 +40,42 @@ export function saveRun(run: StoredRun, limit = STORAGE_LIMIT): StoredRun[] {
     return next
 }
 
+export type SaveRunResult = {
+    ok: boolean
+    error?: string
+}
+
+export function saveRunSafe(
+    run: StoredRun,
+    limit = STORAGE_LIMIT
+): SaveRunResult {
+    if (typeof window === 'undefined') {
+        return { ok: false, error: 'Storage is unavailable.' }
+    }
+
+    try {
+        saveRun(run, limit)
+        return { ok: true }
+    } catch (error) {
+        const message =
+            error instanceof Error ? error.message : 'Failed to save history.'
+        return { ok: false, error: message }
+    }
+}
+
 export function formatRunLabel(run: StoredRun): string {
     const date = new Date(run.createdAt)
     if (Number.isNaN(date.getTime())) {
         return run.createdAt
     }
 
-    return date.toISOString().replace('T', ' ').replace('Z', '')
+    return date.toLocaleString('pl-PL', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    })
 }

@@ -1,7 +1,9 @@
-import { useMemo, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import ColoredDiff from '../components/ColoredDiff'
 import MetricsGrid from '../components/MetricsGrid'
 import MetricsChartPanel from '../components/MetricsChartPanel'
+import TranscriptionCard from '../components/TranscriptionCard'
+import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
 import { formatRunLabel, loadHistory } from '../utils/resultsHistory'
 import type { CompareEntry, EntryMetrics } from './ComparePage.types'
@@ -13,20 +15,45 @@ const EMPTY_METRICS: EntryMetrics = {
     rtTime: null,
 }
 
-const createEntry = (): CompareEntry => ({
-    id: Math.random().toString(36).slice(2),
-    model: '',
-    text: '',
-    metrics: EMPTY_METRICS,
-    status: 'idle',
-})
-
 export default function ComparePage() {
+    const {
+        models,
+        loading: modelCatalogLoading,
+        error: modelCatalogError,
+        getModelLabel,
+    } = useModelCatalog()
     const [referenceText, setReferenceText] = useState('')
-    const [entries, setEntries] = useState<CompareEntry[]>([createEntry()])
+    const [entries, setEntries] = useState<CompareEntry[]>([])
     const [history, setHistory] = useState<StoredRun[]>(() => loadHistory())
     const [selectedRunId, setSelectedRunId] = useState('')
     const [statusMessage, setStatusMessage] = useState('')
+
+    const defaultModelId = models[0]?.id ?? ''
+
+    const createEntry = (modelId: string): CompareEntry => ({
+        id: Math.random().toString(36).slice(2),
+        modelId,
+        modelVersion: undefined,
+        text: '',
+        metrics: EMPTY_METRICS,
+        status: 'idle',
+    })
+
+    useEffect(() => {
+        if (!defaultModelId) {
+            return
+        }
+
+        setEntries((previous) =>
+            previous.length > 0
+                ? previous.map((entry) =>
+                      entry.modelId
+                          ? entry
+                          : { ...entry, modelId: defaultModelId }
+                  )
+                : [createEntry(defaultModelId)]
+        )
+    }, [defaultModelId])
 
     const updateEntry = (
         id: string,
@@ -38,7 +65,10 @@ export default function ComparePage() {
     }
 
     const handleAddEntry = () => {
-        setEntries((previous) => [...previous, createEntry()])
+        if (!defaultModelId) {
+            return
+        }
+        setEntries((previous) => [...previous, createEntry(defaultModelId)])
     }
 
     const handleRemoveEntry = (id: string) => {
@@ -141,7 +171,8 @@ export default function ComparePage() {
             run.results.length > 0
                 ? run.results.map((result) => ({
                       id: Math.random().toString(36).slice(2),
-                      model: result.model,
+                      modelId: result.model,
+                      modelVersion: result.modelVersion,
                       text: result.transcription,
                       metrics: {
                           wer: result.wer,
@@ -150,17 +181,23 @@ export default function ComparePage() {
                       },
                       status: 'success',
                   }))
-                : [createEntry()]
+                : defaultModelId
+                  ? [createEntry(defaultModelId)]
+                  : []
         )
     }
 
     const metricsByModel = useMemo(() => {
         return Object.fromEntries(
             entries.map((entry, index) => {
-                const label = entry.model.trim() || `Model ${index + 1}`
+                const label = entry.modelId
+                    ? getModelLabel(entry.modelId)
+                    : `Model ${index + 1}`
+                const version = entry.modelVersion
+                const displayLabel = version ? `${label} (${version})` : label
 
                 return [
-                    label,
+                    displayLabel,
                     {
                         wer: entry.metrics.wer,
                         cer: entry.metrics.cer,
@@ -169,7 +206,7 @@ export default function ComparePage() {
                 ]
             })
         )
-    }, [entries])
+    }, [entries, getModelLabel])
 
     return (
         <div className="space-y-6">
@@ -235,6 +272,7 @@ export default function ComparePage() {
                 <button
                     className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition active:translate-y-px active:shadow-none"
                     onClick={handleAddEntry}
+                    disabled={!defaultModelId || modelCatalogLoading}
                 >
                     Add model
                 </button>
@@ -244,93 +282,128 @@ export default function ComparePage() {
                 <p className="text-sm text-red-600">{statusMessage}</p>
             ) : null}
 
+            {modelCatalogError ? (
+                <p className="text-sm text-red-600">{modelCatalogError}</p>
+            ) : null}
+
             <MetricsChartPanel
                 metricsByModel={metricsByModel}
                 title="Compare WER/CER"
             />
 
             <div className="grid grid-cols-1 gap-4">
-                {entries.map((entry, index) => (
-                    <section
-                        key={entry.id}
-                        className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                    >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
+                {entries.map((entry, index) => {
+                    const modelLabel = entry.modelId
+                        ? getModelLabel(entry.modelId)
+                        : `Model ${index + 1}`
+                    const displayLabel = entry.modelVersion
+                        ? `${modelLabel} (${entry.modelVersion})`
+                        : modelLabel
+
+                    return (
+                        <TranscriptionCard
+                            key={entry.id}
+                            status={entry.status}
+                            title={modelLabel}
+                            subtitle={
+                                entry.modelVersion
+                                    ? `Model used: ${entry.modelVersion}`
+                                    : undefined
+                            }
+                            headerExtras={
+                                <>
+                                    <label className="text-xs font-semibold text-gray-600">
+                                        Model
+                                    </label>
+                                    <select
+                                        className="w-full max-w-xs rounded-md border border-gray-300 bg-white p-2 text-sm"
+                                        value={entry.modelId}
+                                        onChange={(event) =>
+                                            updateEntry(
+                                                entry.id,
+                                                (current) => ({
+                                                    ...current,
+                                                    modelId: event.target.value,
+                                                    modelVersion: undefined,
+                                                })
+                                            )
+                                        }
+                                    >
+                                        <option value="" disabled>
+                                            Select model
+                                        </option>
+                                        {models.map((model) => (
+                                            <option
+                                                key={model.id}
+                                                value={model.id}
+                                            >
+                                                {model.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </>
+                            }
+                            headerActions={
+                                <button
+                                    className="rounded px-2 py-1 text-xs font-medium text-red-500 transition hover:bg-red-50 active:bg-red-100 active:scale-95"
+                                    onClick={() => handleRemoveEntry(entry.id)}
+                                >
+                                    Remove
+                                </button>
+                            }
+                        >
                             <div className="flex flex-wrap items-center gap-3">
                                 <label className="text-xs font-semibold text-gray-600">
-                                    Model
+                                    Hypothesis text
                                 </label>
                                 <input
-                                    className="w-full max-w-xs rounded-md border border-gray-300 bg-white p-2 text-sm"
-                                    placeholder={`Model ${index + 1}`}
-                                    value={entry.model}
+                                    type="file"
+                                    accept=".txt"
                                     onChange={(event) =>
-                                        updateEntry(entry.id, (current) => ({
-                                            ...current,
-                                            model: event.target.value,
-                                        }))
+                                        handleEntryFile(entry.id, event)
                                     }
+                                    className="block w-full max-w-xs text-sm"
                                 />
                             </div>
-                            <button
-                                className="rounded px-2 py-1 text-xs font-medium text-red-500 transition hover:bg-red-50 active:bg-red-100 active:scale-95"
-                                onClick={() => handleRemoveEntry(entry.id)}
-                            >
-                                Remove
-                            </button>
-                        </div>
 
-                        <div className="mt-3 flex flex-wrap items-center gap-3">
-                            <label className="text-xs font-semibold text-gray-600">
-                                Hypothesis text
-                            </label>
-                            <input
-                                type="file"
-                                accept=".txt"
+                            <textarea
+                                className="mt-3 min-h-28 w-full rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"
+                                value={entry.text}
                                 onChange={(event) =>
-                                    handleEntryFile(entry.id, event)
+                                    updateEntry(entry.id, (current) => ({
+                                        ...current,
+                                        text: event.target.value,
+                                    }))
                                 }
-                                className="block w-full max-w-xs text-sm"
+                                placeholder="Paste hypothesis text here"
                             />
-                        </div>
 
-                        <textarea
-                            className="mt-3 min-h-28 w-full rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"
-                            value={entry.text}
-                            onChange={(event) =>
-                                updateEntry(entry.id, (current) => ({
-                                    ...current,
-                                    text: event.target.value,
-                                }))
-                            }
-                            placeholder="Paste hypothesis text here"
-                        />
-
-                        <MetricsGrid
-                            metrics={{
-                                wer: entry.metrics.wer,
-                                cer: entry.metrics.cer,
-                                rtTime: entry.metrics.rtTime,
-                            }}
-                            showTime={true}
-                        />
-
-                        {entry.status === 'error' ? (
-                            <p className="mt-2 text-xs text-red-500">
-                                Failed to compute metrics.
-                            </p>
-                        ) : null}
-
-                        <div className="mt-3">
-                            <ColoredDiff
-                                enabled={true}
-                                referenceText={referenceText}
-                                hypothesisText={entry.text}
-                                modelName={entry.model || `Model ${index + 1}`}
+                            <MetricsGrid
+                                metrics={{
+                                    wer: entry.metrics.wer,
+                                    cer: entry.metrics.cer,
+                                    rtTime: entry.metrics.rtTime,
+                                }}
+                                showTime={true}
                             />
-                        </div>
-                    </section>
-                ))}
+
+                            {entry.status === 'error' ? (
+                                <p className="mt-2 text-xs text-red-500">
+                                    Failed to compute metrics.
+                                </p>
+                            ) : null}
+
+                            <div className="mt-3">
+                                <ColoredDiff
+                                    enabled={true}
+                                    referenceText={referenceText}
+                                    hypothesisText={entry.text}
+                                    modelName={displayLabel}
+                                />
+                            </div>
+                        </TranscriptionCard>
+                    )
+                })}
             </div>
         </div>
     )

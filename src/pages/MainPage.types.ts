@@ -1,14 +1,3 @@
-export const MODELS = [
-    'openai',
-    'whisperOffline',
-    'whisperX',
-    'googleStt',
-    'azureStt',
-    'amazonStt',
-] as const
-
-export type ModelName = (typeof MODELS)[number]
-
 export type ModelMetrics = {
     wer: number | null
     cer: number | null

@@ -8,7 +8,8 @@ export type EntryStatus = 'idle' | 'loading' | 'success' | 'error'
 
 export type CompareEntry = {
     id: string
-    model: string
+    modelId: string
+    modelVersion?: string
     text: string
     metrics: EntryMetrics
     status: EntryStatus
