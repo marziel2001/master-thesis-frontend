@@ -24,6 +24,7 @@ function MainPage() {
     const [results, setResults] = useState<Record<ModelName, string>>({
         openai: '',
         whisperOffline: '',
+        whisperX: '',
         googleStt: '',
         azureStt: '',
         amazonStt: '',
@@ -31,6 +32,7 @@ function MainPage() {
     const [metrics, setMetrics] = useState<Record<ModelName, ModelMetrics>>({
         openai: EMPTY_METRICS,
         whisperOffline: EMPTY_METRICS,
+        whisperX: EMPTY_METRICS,
         googleStt: EMPTY_METRICS,
         azureStt: EMPTY_METRICS,
         amazonStt: EMPTY_METRICS,
@@ -40,6 +42,7 @@ function MainPage() {
     >({
         openai: false,
         whisperOffline: false,
+        whisperX: false,
         googleStt: false,
         azureStt: false,
         amazonStt: false,
@@ -49,6 +52,7 @@ function MainPage() {
     >({
         openai: 'idle',
         whisperOffline: 'idle',
+        whisperX: 'idle',
         googleStt: 'idle',
         azureStt: 'idle',
         amazonStt: 'idle',
@@ -58,6 +62,7 @@ function MainPage() {
     >({
         openai: false,
         whisperOffline: false,
+        whisperX: false,
         googleStt: false,
         azureStt: false,
         amazonStt: false,

@@ -1,6 +1,7 @@
 export const MODELS = [
     'openai',
     'whisperOffline',
+    'whisperX',
     'googleStt',
     'azureStt',
     'amazonStt',

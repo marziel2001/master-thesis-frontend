@@ -2,6 +2,15 @@ import ColoredDiff from './ColoredDiff'
 import MetricsGrid from './MetricsGrid'
 import type { TranscriptionWidgetProps } from './TranscriptionWidget.types'
 
+const MODEL_LABELS: Record<string, string> = {
+    openai: 'OpenAI Whisper',
+    whisperOffline: 'Whisper offline',
+    whisperX: 'WhisperX',
+    googleStt: 'Google STT',
+    azureStt: 'Azure STT',
+    amazonStt: 'Amazon Transcribe',
+}
+
 export default function TranscriptionWidget({
     model,
     checked,
@@ -30,7 +39,7 @@ export default function TranscriptionWidget({
         >
             <label className="mb-3 flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-gray-800">
-                    {model}
+                    {MODEL_LABELS[model] ?? model}
                 </span>
                 <input
                     type="checkbox"
