@@ -17,6 +17,14 @@ const EMPTY_METRICS: ModelMetrics = {
     rtTime: null,
 }
 
+type FinishedModelResult = {
+    model: ModelName
+    transcription: string
+    wer: number | null
+    cer: number | null
+    rtTime: number | null
+}
+
 function MainPage() {
     const [file, setFile] = useState<File | null>(null)
     const [referenceText, setReferenceText] = useState('')
@@ -102,10 +110,12 @@ function MainPage() {
         }))
     }
 
-    const runTranscriptionForModel = async (model: ModelName) => {
+    const runTranscriptionForModel = async (
+        model: ModelName
+    ): Promise<FinishedModelResult | null> => {
         if (!file) {
             setStatusMessage('Select an audio file first.')
-            return
+            return null
         }
 
         setStatusMessage('')
@@ -129,6 +139,15 @@ function MainPage() {
             )
             setModelMetrics(model, { wer, cer, rtTime })
             setModelStatus(model, 'success')
+
+            return {
+                model,
+                transcription:
+                    transcription || 'No transcription text in response.',
+                wer,
+                cer,
+                rtTime,
+            }
         } catch (error) {
             console.error(error)
             setModelResult(
@@ -137,6 +156,7 @@ function MainPage() {
             )
             setModelMetrics(model, EMPTY_METRICS)
             setModelStatus(model, 'error')
+            return null
         } finally {
             setModelLoading(model, false)
         }
@@ -254,6 +274,22 @@ function MainPage() {
         setHistoryMessage('Saved to local history.')
     }
 
+    const saveBatchRun = (batchResults: FinishedModelResult[]) => {
+        if (batchResults.length === 0) {
+            setHistoryMessage('Nothing to save yet.')
+            return
+        }
+
+        saveRun({
+            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            createdAt: new Date().toISOString(),
+            referenceText,
+            results: batchResults,
+        })
+
+        setHistoryMessage('Saved to local history.')
+    }
+
     const handleUpload = async () => {
         if (!file) {
             setStatusMessage('Select an audio file first.')
@@ -270,9 +306,25 @@ function MainPage() {
         setStatusMessage('')
         setHistoryMessage('')
 
-        selectedModels.forEach((model) => {
-            void runTranscriptionForModel(model)
-        })
+        const settledResults = await Promise.allSettled(
+            selectedModels.map((model) => runTranscriptionForModel(model))
+        )
+
+        const batchResults = settledResults.flatMap((entry) =>
+            entry.status === 'fulfilled' && entry.value ? [entry.value] : []
+        )
+
+        if (batchResults.length === 0) {
+            return
+        }
+
+        const shouldSave = window.confirm(
+            'The selected model run finished. Save this session to local history?'
+        )
+
+        if (shouldSave) {
+            saveBatchRun(batchResults)
+        }
     }
 
     return (
