@@ -44,7 +44,9 @@ function MainPage() {
     } = useModelCatalog()
     const [file, setFile] = useState<File | null>(null)
     const [fileName, setFileName] = useState('')
+    const [saveName, setSaveName] = useState('')
     const [referenceText, setReferenceText] = useState('')
+    const [referenceFileName, setReferenceFileName] = useState('')
     const [statusMessage, setStatusMessage] = useState('')
     const [historyMessage, setHistoryMessage] = useState('')
     const [results, setResults] = useState<Record<string, string>>({})
@@ -67,6 +69,27 @@ function MainPage() {
     const [modelVariants, setModelVariants] = useState<Record<string, string>>(
         {}
     )
+
+    const buildDefaultSaveName = (selectedFile: File | null) => {
+        if (!selectedFile) {
+            return ''
+        }
+
+        const baseName = selectedFile.name.replace(/\.[^.]+$/, '')
+        const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ')
+        return `${baseName} - ${stamp}`
+    }
+
+    const handleReferenceFile = async (selectedFile: File | null) => {
+        if (!selectedFile) {
+            setReferenceFileName('')
+            return
+        }
+
+        const text = await selectedFile.text()
+        setReferenceText(text)
+        setReferenceFileName(selectedFile.name)
+    }
 
     useEffect(() => {
         if (models.length === 0) {
@@ -285,6 +308,7 @@ function MainPage() {
         const saveResult = saveRunSafe({
             id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
             createdAt: new Date().toISOString(),
+            name: saveName.trim() || undefined,
             referenceText,
             results: runResults,
         })
@@ -308,6 +332,7 @@ function MainPage() {
         const saveResult = saveRunSafe({
             id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
             createdAt: new Date().toISOString(),
+            name: saveName.trim() || undefined,
             referenceText,
             results: batchResults,
         })
@@ -373,226 +398,287 @@ function MainPage() {
     }
 
     return (
-        <div>
-            <h2 className="mb-4 text-2xl font-semibold text-gray-900">
-                Multi-model transcription
-            </h2>
-
-            <div className="mb-5 flex flex-wrap items-center gap-3">
-                <FilePicker
-                    label="Audio file"
-                    accept="audio/*"
-                    fileName={fileName}
-                    onFileChange={(selectedFile) => {
-                        setFile(selectedFile)
-                        setFileName(selectedFile?.name ?? '')
-                    }}
-                />
-                <button
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"
-                    onClick={handleUpload}
-                    disabled={
-                        models.length === 0 ||
-                        models.every((model) => !enabledModels[model.id])
-                    }
-                >
-                    Send to selected models
-                </button>
-                <button
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 disabled:cursor-not-allowed disabled:text-gray-400"
-                    onClick={handleSaveRun}
-                    disabled={!hasAnyResult}
-                >
-                    Save results
-                </button>
-            </div>
-
-            <div className="mb-5">
-                <label
-                    htmlFor="reference-text"
-                    className="mb-2 block text-sm font-medium text-gray-800"
-                >
-                    Reference text (for notebook-style colored diff)
-                </label>
-                <textarea
-                    id="reference-text"
-                    className="min-h-28 w-full rounded-md border border-gray-300 bg-white p-3 text-sm text-gray-800"
-                    value={referenceText}
-                    onChange={(event) => setReferenceText(event.target.value)}
-                    placeholder="Paste reference text here"
-                />
-            </div>
-
-            {statusMessage ? (
-                <p className="mb-4 text-sm text-red-600">{statusMessage}</p>
-            ) : null}
-
-            {modelCatalogError ? (
-                <p className="mb-4 text-sm text-red-600">{modelCatalogError}</p>
-            ) : null}
-
-            {historyMessage ? (
-                <p className="mb-4 text-sm text-green-600">{historyMessage}</p>
-            ) : null}
-
-            <div className="mb-5">
-                <MetricsChartPanel
-                    metricsByModel={chartMetrics}
-                    title="WER/CER overview"
-                />
-            </div>
-
-            <div className="mb-4 flex items-center justify-end">
-                <button
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition active:translate-y-px active:shadow-none"
-                    onClick={() => setAllModelsEnabled(!allModelsEnabled)}
-                    type="button"
-                >
-                    {allModelsEnabled ? 'Uncheck all' : 'Check all'}
-                </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {models.map((model) => {
-                    const modelId = model.id
-                    const modelLabel = getModelLabel(modelId)
-                    const modelVariantOptions = getVariants(modelId)
-                    const selectedVariant = modelVariants[modelId] || ''
-                    const usedVariant = modelVersions[modelId] || ''
-                    const metricsEntry = metrics[modelId] ?? EMPTY_METRICS
-                    const transcriptionText = results[modelId] ?? ''
-                    const isChecked = enabledModels[modelId] ?? false
-                    const diffContainerClassName = isChecked
-                        ? 'max-h-[9999px] opacity-100 mt-3'
-                        : 'max-h-0 opacity-0 mt-0'
-                    const diffLabel = usedVariant
-                        ? `${modelLabel} (${usedVariant})`
-                        : modelLabel
-
-                    return (
-                        <TranscriptionCard
-                            key={modelId}
-                            status={statusByModel[modelId] ?? 'idle'}
-                            title={modelLabel}
-                            subtitle={
-                                usedVariant
-                                    ? `Model used: ${usedVariant}`
-                                    : undefined
+        <div className="space-y-5">
+            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-800">
+                    Input sources
+                </h3>
+                <div className="mt-4 space-y-4">
+                    <FilePicker
+                        label="Audio file"
+                        accept="audio/*"
+                        fileName={fileName}
+                        compact={true}
+                        onFileChange={(selectedFile) => {
+                            setFile(selectedFile)
+                            setFileName(selectedFile?.name ?? '')
+                            setSaveName(
+                                selectedFile
+                                    ? buildDefaultSaveName(selectedFile)
+                                    : ''
+                            )
+                        }}
+                    />
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+                        <label
+                            htmlFor="reference-text"
+                            className="block text-sm font-semibold text-gray-800"
+                        >
+                            Reference text
+                        </label>
+                        <p className="mt-1 text-xs text-gray-500">
+                            Text used for WER, CER and colored diff.
+                        </p>
+                        <div className="mt-3">
+                            <FilePicker
+                                label="Reference file"
+                                accept=".txt"
+                                fileName={referenceFileName}
+                                onFileChange={(selectedFile) => {
+                                    void handleReferenceFile(selectedFile)
+                                }}
+                                compact={true}
+                            />
+                        </div>
+                        <textarea
+                            id="reference-text"
+                            className="mt-3 min-h-28 w-full rounded-md border border-gray-300 bg-white p-3 text-sm text-gray-800"
+                            value={referenceText}
+                            onChange={(event) =>
+                                setReferenceText(event.target.value)
                             }
-                            headerExtras={
-                                modelVariantOptions.length > 0 ? (
+                            placeholder="Paste reference text here"
+                        />
+                    </div>
+                </div>
+            </section>
+
+            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-sm font-semibold text-gray-800">
+                            Saved results
+                        </h3>
+                        <p className="mt-1 text-xs text-gray-500">
+                            Give this run a name before saving so it is easier
+                            to find later.
+                        </p>
+                    </div>
+                    <button
+                        className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:text-gray-400"
+                        onClick={handleSaveRun}
+                        disabled={!hasAnyResult}
+                    >
+                        Save results
+                    </button>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+                    <label
+                        htmlFor="save-name"
+                        className="block text-sm font-semibold text-gray-800"
+                    >
+                        Saved entry name
+                    </label>
+                    <input
+                        id="save-name"
+                        type="text"
+                        className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800"
+                        value={saveName}
+                        onChange={(event) => setSaveName(event.target.value)}
+                        placeholder="Enter a custom name"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                        Default name is based on the audio file and the current
+                        date.
+                    </p>
+                </div>
+
+                {statusMessage ? (
+                    <p className="mt-4 text-sm text-red-600">{statusMessage}</p>
+                ) : null}
+
+                {modelCatalogError ? (
+                    <p className="mt-4 text-sm text-red-600">
+                        {modelCatalogError}
+                    </p>
+                ) : null}
+
+                {historyMessage ? (
+                    <p className="mt-4 text-sm text-green-600">
+                        {historyMessage}
+                    </p>
+                ) : null}
+
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <button
+                        className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"
+                        onClick={handleUpload}
+                        disabled={
+                            models.length === 0 ||
+                            models.every((model) => !enabledModels[model.id])
+                        }
+                    >
+                        Send to selected models
+                    </button>
+                    <button
+                        className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition active:translate-y-px active:shadow-none"
+                        onClick={() => setAllModelsEnabled(!allModelsEnabled)}
+                        type="button"
+                    >
+                        {allModelsEnabled ? 'Uncheck all' : 'Check all'}
+                    </button>
+                </div>
+
+                <div className="mt-5">
+                    <MetricsChartPanel
+                        metricsByModel={chartMetrics}
+                        title="WER/CER overview"
+                    />
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {models.map((model) => {
+                        const modelId = model.id
+                        const modelLabel = getModelLabel(modelId)
+                        const modelVariantOptions = getVariants(modelId)
+                        const selectedVariant = modelVariants[modelId] || ''
+                        const usedVariant = modelVersions[modelId] || ''
+                        const metricsEntry = metrics[modelId] ?? EMPTY_METRICS
+                        const transcriptionText = results[modelId] ?? ''
+                        const isChecked = enabledModels[modelId] ?? false
+                        const diffContainerClassName = isChecked
+                            ? 'max-h-[9999px] opacity-100 mt-3'
+                            : 'max-h-0 opacity-0 mt-0'
+                        const diffLabel = usedVariant
+                            ? `${modelLabel} (${usedVariant})`
+                            : modelLabel
+
+                        return (
+                            <TranscriptionCard
+                                key={modelId}
+                                status={statusByModel[modelId] ?? 'idle'}
+                                title={modelLabel}
+                                subtitle={
+                                    usedVariant
+                                        ? `Model used: ${usedVariant}`
+                                        : undefined
+                                }
+                                headerExtras={
+                                    modelVariantOptions.length > 0 ? (
+                                        <>
+                                            <label className="text-xs font-semibold text-gray-600">
+                                                Model
+                                            </label>
+                                            <select
+                                                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs"
+                                                value={selectedVariant}
+                                                onChange={(event) =>
+                                                    updateModelVariant(
+                                                        modelId,
+                                                        event.target.value
+                                                    )
+                                                }
+                                            >
+                                                {modelVariantOptions.map(
+                                                    (variant) => (
+                                                        <option
+                                                            key={variant}
+                                                            value={variant}
+                                                        >
+                                                            {variant}
+                                                        </option>
+                                                    )
+                                                )}
+                                            </select>
+                                        </>
+                                    ) : null
+                                }
+                                headerActions={
                                     <>
-                                        <label className="text-xs font-semibold text-gray-600">
-                                            Model
-                                        </label>
-                                        <select
-                                            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs"
-                                            value={selectedVariant}
-                                            onChange={(event) =>
-                                                updateModelVariant(
-                                                    modelId,
-                                                    event.target.value
+                                        <button
+                                            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+                                            onClick={() =>
+                                                void runTranscriptionForModel(
+                                                    modelId
                                                 )
                                             }
+                                            disabled={
+                                                loadingState[modelId] ===
+                                                    true ||
+                                                modelCatalogLoading ||
+                                                !file
+                                            }
                                         >
-                                            {modelVariantOptions.map(
-                                                (variant) => (
-                                                    <option
-                                                        key={variant}
-                                                        value={variant}
-                                                    >
-                                                        {variant}
-                                                    </option>
+                                            {loadingState[modelId]
+                                                ? 'Running...'
+                                                : 'Run'}
+                                        </button>
+                                        <button
+                                            className="rounded-md border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+                                            onClick={() =>
+                                                void recalculateMetricsForModel(
+                                                    modelId
                                                 )
-                                            )}
-                                        </select>
+                                            }
+                                            disabled={
+                                                metricsLoadingState[modelId] ===
+                                                    true ||
+                                                results[modelId]?.trim()
+                                                    .length === 0 ||
+                                                referenceText.trim().length ===
+                                                    0
+                                            }
+                                        >
+                                            {metricsLoadingState[modelId]
+                                                ? 'Recalculating...'
+                                                : 'Recompute metrics'}
+                                        </button>
+                                        <label className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                                            <input
+                                                type="checkbox"
+                                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                                checked={isChecked}
+                                                onChange={(event) =>
+                                                    updateModelEnabled(
+                                                        modelId,
+                                                        event.target.checked
+                                                    )
+                                                }
+                                            />
+                                            Include in batch
+                                        </label>
                                     </>
-                                ) : null
-                            }
-                            headerActions={
-                                <>
-                                    <button
-                                        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
-                                        onClick={() =>
-                                            void runTranscriptionForModel(
-                                                modelId
-                                            )
-                                        }
-                                        type="button"
-                                        disabled={
-                                            file === null ||
-                                            loadingState[modelId] === true
-                                        }
-                                        title="Run this model again with the current audio file"
-                                    >
-                                        Rerun
-                                    </button>
-                                    <button
-                                        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
-                                        onClick={() =>
-                                            void recalculateMetricsForModel(
-                                                modelId
-                                            )
-                                        }
-                                        type="button"
-                                        disabled={
-                                            transcriptionText.trim().length ===
-                                                0 ||
-                                            referenceText.trim().length === 0 ||
-                                            metricsLoadingState[modelId] ===
-                                                true
-                                        }
-                                        title="Recalculate metrics for the current transcription"
-                                    >
-                                        {metricsLoadingState[modelId]
-                                            ? 'Recalculating...'
-                                            : 'Recalculate metrics'}
-                                    </button>
-                                    <input
-                                        type="checkbox"
-                                        className="h-4 w-4"
-                                        checked={isChecked}
-                                        onChange={(event) =>
-                                            updateModelEnabled(
-                                                modelId,
-                                                event.target.checked
-                                            )
-                                        }
-                                    />
-                                </>
-                            }
-                        >
-                            <textarea
-                                className="min-h-32 w-full resize-y rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"
-                                readOnly
-                                value={
-                                    loadingState[modelId]
-                                        ? 'Transcribing...'
-                                        : transcriptionText
                                 }
-                                placeholder={
-                                    isChecked
-                                        ? 'Result will appear here'
-                                        : 'Enable this model to include it in transcription'
-                                }
-                            />
-
-                            <MetricsGrid metrics={metricsEntry} />
-
-                            <div
-                                className={`overflow-hidden transition-[max-height,opacity,margin] duration-300 ease-out ${diffContainerClassName}`}
                             >
-                                <ColoredDiff
-                                    enabled={isChecked}
-                                    referenceText={referenceText}
-                                    hypothesisText={transcriptionText}
-                                    modelName={diffLabel}
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Transcription
+                                </p>
+                                <textarea
+                                    className="mt-2 min-h-28 w-full rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"
+                                    value={transcriptionText}
+                                    readOnly
+                                    placeholder="Run the model to see transcription here"
                                 />
-                            </div>
-                        </TranscriptionCard>
-                    )
-                })}
-            </div>
+
+                                <MetricsGrid
+                                    metrics={metricsEntry}
+                                    showTime={true}
+                                />
+
+                                <div className={diffContainerClassName}>
+                                    <ColoredDiff
+                                        enabled={isChecked}
+                                        referenceText={referenceText}
+                                        hypothesisText={transcriptionText}
+                                        modelName={diffLabel}
+                                    />
+                                </div>
+                            </TranscriptionCard>
+                        )
+                    })}
+                </div>
+            </section>
         </div>
     )
 }

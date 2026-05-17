@@ -65,17 +65,25 @@ export function saveRunSafe(
 
 export function formatRunLabel(run: StoredRun): string {
     const date = new Date(run.createdAt)
+    const dateLabel = Number.isNaN(date.getTime())
+        ? run.createdAt
+        : date.toLocaleString('pl-PL', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false,
+          })
+
+    if (run.name?.trim()) {
+        return `${run.name.trim()} · ${dateLabel}`
+    }
+
     if (Number.isNaN(date.getTime())) {
         return run.createdAt
     }
 
-    return date.toLocaleString('pl-PL', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-    })
+    return dateLabel
 }

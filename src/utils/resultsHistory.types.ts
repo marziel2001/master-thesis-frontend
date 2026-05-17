@@ -10,6 +10,7 @@ export type StoredResult = {
 export type StoredRun = {
     id: string
     createdAt: string
+    name?: string
     referenceText: string
     results: StoredResult[]
 }
