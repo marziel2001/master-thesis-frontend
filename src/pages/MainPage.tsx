@@ -57,6 +57,9 @@ function MainPage() {
     const [metricsLoadingState, setMetricsLoadingState] = useState<
         Record<string, boolean>
     >({})
+    const [expandedModelIds, setExpandedModelIds] = useState<Set<string>>(
+        () => new Set()
+    )
     const [statusByModel, setStatusByModel] = useState<
         Record<string, ModelStatus>
     >({})
@@ -245,6 +248,18 @@ function MainPage() {
         if (!enabled) {
             models.forEach((model) => setModelStatus(model.id, 'idle'))
         }
+    }
+
+    const toggleExpandedModel = (modelId: string) => {
+        setExpandedModelIds((previous) => {
+            const next = new Set(previous)
+            if (next.has(modelId)) {
+                next.delete(modelId)
+            } else {
+                next.add(modelId)
+            }
+            return next
+        })
     }
 
     const allModelsEnabled =
@@ -547,140 +562,193 @@ function MainPage() {
                         const metricsEntry = metrics[modelId] ?? EMPTY_METRICS
                         const transcriptionText = results[modelId] ?? ''
                         const isChecked = enabledModels[modelId] ?? false
+                        const isExpanded = expandedModelIds.has(modelId)
                         const diffContainerClassName = isChecked
-                            ? 'max-h-[9999px] opacity-100 mt-3'
-                            : 'max-h-0 opacity-0 mt-0'
+                            ? 'mt-4 max-h-[9999px] opacity-100'
+                            : 'mt-0 max-h-0 opacity-0'
                         const diffLabel = usedVariant
                             ? `${modelLabel} (${usedVariant})`
                             : modelLabel
 
                         return (
-                            <TranscriptionCard
+                            <div
                                 key={modelId}
-                                status={statusByModel[modelId] ?? 'idle'}
-                                title={modelLabel}
-                                subtitle={
-                                    usedVariant
-                                        ? `Model used: ${usedVariant}`
-                                        : undefined
-                                }
-                                headerExtras={
-                                    modelVariantOptions.length > 0 ? (
-                                        <>
-                                            <label className="text-xs font-semibold text-gray-600">
-                                                Model
+                                className={`min-w-0 ${
+                                    isExpanded ? 'col-span-full' : ''
+                                }`}
+                            >
+                                <TranscriptionCard
+                                    status={statusByModel[modelId] ?? 'idle'}
+                                    title={modelLabel}
+                                    headerContent={
+                                        <div className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <label className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                                                <input
+                                                    type="checkbox"
+                                                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                                    checked={isChecked}
+                                                    onChange={(event) =>
+                                                        updateModelEnabled(
+                                                            modelId,
+                                                            event.target.checked
+                                                        )
+                                                    }
+                                                />
                                             </label>
-                                            <select
-                                                className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs"
-                                                value={selectedVariant}
-                                                onChange={(event) =>
-                                                    updateModelVariant(
-                                                        modelId,
-                                                        event.target.value
+                                            <div className="min-w-0 flex-1 text-center">
+                                                <p className="truncate text-sm font-semibold text-gray-800">
+                                                    {modelLabel}
+                                                </p>
+                                            </div>
+                                            <button
+                                                className="rounded-md border border-gray-300 bg-white p-1.5 text-gray-700 transition hover:bg-gray-50"
+                                                onClick={() =>
+                                                    toggleExpandedModel(modelId)
+                                                }
+                                                type="button"
+                                                title={
+                                                    isExpanded
+                                                        ? 'Collapse'
+                                                        : 'Expand'
+                                                }
+                                                aria-pressed={isExpanded}
+                                            >
+                                                {isExpanded ? (
+                                                    <svg
+                                                        aria-hidden="true"
+                                                        viewBox="0 0 20 20"
+                                                        className="h-4 w-4"
+                                                        fill="currentColor"
+                                                    >
+                                                        <path d="M5 5h4V3H3v6h2V5Zm6-2v2h4v4h2V3h-6Zm4 14h-4v2h6v-6h-2v4ZM5 11H3v6h6v-2H5v-4Z" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg
+                                                        aria-hidden="true"
+                                                        viewBox="0 0 20 20"
+                                                        className="h-4 w-4"
+                                                        fill="currentColor"
+                                                    >
+                                                        <path d="M3 3h6v2H5v4H3V3Zm8 0h6v6h-2V5h-4V3ZM5 11v4h4v2H3v-6h2Zm12 0v6h-6v-2h4v-4h2Z" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        </div>
+                                    }
+                                >
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                            Transcription
+                                        </p>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {modelVariantOptions.length > 0 ? (
+                                                <select
+                                                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs"
+                                                    value={selectedVariant}
+                                                    onChange={(event) =>
+                                                        updateModelVariant(
+                                                            modelId,
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                >
+                                                    {modelVariantOptions.map(
+                                                        (variant) => (
+                                                            <option
+                                                                key={variant}
+                                                                value={variant}
+                                                            >
+                                                                {variant}
+                                                            </option>
+                                                        )
+                                                    )}
+                                                </select>
+                                            ) : null}
+                                            <button
+                                                className="rounded-md border border-gray-300 bg-white p-1.5 text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+                                                onClick={() =>
+                                                    void runTranscriptionForModel(
+                                                        modelId
                                                     )
+                                                }
+                                                disabled={
+                                                    loadingState[modelId] ===
+                                                        true ||
+                                                    modelCatalogLoading ||
+                                                    !file
+                                                }
+                                                title={
+                                                    loadingState[modelId]
+                                                        ? 'Running...'
+                                                        : 'Run again'
+                                                }
+                                                type="button"
+                                            >
+                                                <svg
+                                                    aria-hidden="true"
+                                                    viewBox="0 0 20 20"
+                                                    className="h-4 w-4"
+                                                    fill="currentColor"
+                                                >
+                                                    <path d="M10 3a7 7 0 1 1-6.32 4H1.5a.5.5 0 0 1-.5-.5V3.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V5h2.16A7 7 0 0 1 10 3Zm0 2a5 5 0 1 0 4.58 3H12.5a.5.5 0 0 1 0-1h3.5a.5.5 0 0 1 .5.5v3.5a.5.5 0 0 1-1 0V9.64A5 5 0 0 0 10 5Z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <textarea
+                                        className="mt-2 min-h-28 w-full rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"
+                                        value={transcriptionText}
+                                        readOnly
+                                        placeholder="Run the model to see transcription here"
+                                    />
+
+                                    <MetricsGrid
+                                        metrics={metricsEntry}
+                                        showTime={true}
+                                        title="Metrics"
+                                        subtitle={
+                                            usedVariant
+                                                ? `Model used: ${usedVariant}`
+                                                : undefined
+                                        }
+                                        footer={
+                                            <button
+                                                className="rounded-md border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+                                                onClick={() =>
+                                                    void recalculateMetricsForModel(
+                                                        modelId
+                                                    )
+                                                }
+                                                disabled={
+                                                    metricsLoadingState[
+                                                        modelId
+                                                    ] === true ||
+                                                    results[modelId]?.trim()
+                                                        .length === 0 ||
+                                                    referenceText.trim()
+                                                        .length === 0
                                                 }
                                             >
-                                                {modelVariantOptions.map(
-                                                    (variant) => (
-                                                        <option
-                                                            key={variant}
-                                                            value={variant}
-                                                        >
-                                                            {variant}
-                                                        </option>
-                                                    )
-                                                )}
-                                            </select>
-                                        </>
-                                    ) : null
-                                }
-                                headerActions={
-                                    <>
-                                        <button
-                                            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
-                                            onClick={() =>
-                                                void runTranscriptionForModel(
-                                                    modelId
-                                                )
-                                            }
-                                            disabled={
-                                                loadingState[modelId] ===
-                                                    true ||
-                                                modelCatalogLoading ||
-                                                !file
-                                            }
-                                        >
-                                            {loadingState[modelId]
-                                                ? 'Running...'
-                                                : 'Run'}
-                                        </button>
-                                        <button
-                                            className="rounded-md border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
-                                            onClick={() =>
-                                                void recalculateMetricsForModel(
-                                                    modelId
-                                                )
-                                            }
-                                            disabled={
-                                                metricsLoadingState[modelId] ===
-                                                    true ||
-                                                results[modelId]?.trim()
-                                                    .length === 0 ||
-                                                referenceText.trim().length ===
-                                                    0
-                                            }
-                                        >
-                                            {metricsLoadingState[modelId]
-                                                ? 'Recalculating...'
-                                                : 'Recompute metrics'}
-                                        </button>
-                                        <label className="flex items-center gap-2 text-xs font-medium text-gray-700">
-                                            <input
-                                                type="checkbox"
-                                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                                                checked={isChecked}
-                                                onChange={(event) =>
-                                                    updateModelEnabled(
-                                                        modelId,
-                                                        event.target.checked
-                                                    )
-                                                }
-                                            />
-                                            Include in batch
-                                        </label>
-                                    </>
-                                }
-                            >
-                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Transcription
-                                </p>
-                                <textarea
-                                    className="mt-2 min-h-28 w-full rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"
-                                    value={transcriptionText}
-                                    readOnly
-                                    placeholder="Run the model to see transcription here"
-                                />
+                                                {metricsLoadingState[modelId]
+                                                    ? 'Recalculating...'
+                                                    : 'Recompute metrics'}
+                                            </button>
+                                        }
+                                    />
 
-                                <MetricsGrid
-                                    metrics={metricsEntry}
-                                    showTime={true}
-                                    title="Metrics"
-                                />
-
-                                <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                        Diff
-                                    </p>
-                                    <div className={diffContainerClassName}>
+                                    <div
+                                        className={`transition-[max-height,opacity,margin] duration-300 ease-out ${diffContainerClassName}`}
+                                    >
                                         <ColoredDiff
                                             enabled={isChecked}
                                             referenceText={referenceText}
                                             hypothesisText={transcriptionText}
                                             modelName={diffLabel}
+                                            title="Diff"
                                         />
                                     </div>
-                                </div>
-                            </TranscriptionCard>
+                                </TranscriptionCard>
+                            </div>
                         )
                     })}
                 </div>

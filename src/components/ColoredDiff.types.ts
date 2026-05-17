@@ -3,4 +3,5 @@ export type ColoredDiffProps = {
     hypothesisText: string
     modelName: string
     enabled: boolean
+    title?: string
 }

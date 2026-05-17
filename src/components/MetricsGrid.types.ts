@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 export type MetricsGridProps = {
     metrics: {
         wer: number | null
@@ -6,4 +8,6 @@ export type MetricsGridProps = {
     }
     showTime?: boolean
     title?: string
+    subtitle?: string
+    footer?: ReactNode
 }

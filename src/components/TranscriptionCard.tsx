@@ -8,6 +8,7 @@ export type TranscriptionCardProps = {
     subtitle?: string
     headerExtras?: ReactNode
     headerActions?: ReactNode
+    headerContent?: ReactNode
     children: ReactNode
 }
 
@@ -24,6 +25,7 @@ export default function TranscriptionCard({
     subtitle,
     headerExtras,
     headerActions,
+    headerContent,
     children,
 }: TranscriptionCardProps) {
     return (
@@ -32,28 +34,34 @@ export default function TranscriptionCard({
                 STATUS_STYLES[status]
             }`}
         >
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-3">
-                    <div>
-                        <p className="text-sm font-semibold text-gray-800">
-                            {title}
-                        </p>
-                        {subtitle ? (
-                            <p className="text-xs text-gray-600">{subtitle}</p>
+            {headerContent ? (
+                <div className="mb-3 w-full">{headerContent}</div>
+            ) : (
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div>
+                            <p className="text-sm font-semibold text-gray-800">
+                                {title}
+                            </p>
+                            {subtitle ? (
+                                <p className="text-xs text-gray-600">
+                                    {subtitle}
+                                </p>
+                            ) : null}
+                        </div>
+                        {headerExtras ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                                {headerExtras}
+                            </div>
                         ) : null}
                     </div>
-                    {headerExtras ? (
+                    {headerActions ? (
                         <div className="flex flex-wrap items-center gap-2">
-                            {headerExtras}
+                            {headerActions}
                         </div>
                     ) : null}
                 </div>
-                {headerActions ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                        {headerActions}
-                    </div>
-                ) : null}
-            </div>
+            )}
             {children}
         </section>
     )
