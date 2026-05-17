@@ -40,6 +40,19 @@ export function saveRun(run: StoredRun, limit = STORAGE_LIMIT): StoredRun[] {
     return next
 }
 
+export function deleteRun(runId: string): StoredRun[] {
+    if (typeof window === 'undefined') {
+        return []
+    }
+
+    const current = loadHistory()
+    const next = current.filter((run) => run.id !== runId)
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+
+    return next
+}
+
 export type SaveRunResult = {
     ok: boolean
     error?: string

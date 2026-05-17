@@ -60,23 +60,31 @@ export default function ColoredDiff({
 
     if (!referenceText.trim()) {
         return (
-            <p className="text-xs text-gray-500">
+            <div className="rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-500 shadow-sm">
                 Add reference text to see notebook-style diff.
-            </p>
+            </div>
         )
     }
 
     if (!hypothesisText.trim()) {
         return (
-            <p className="text-xs text-gray-500">
+            <div className="rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-500 shadow-sm">
                 Run transcription to see notebook-style diff.
-            </p>
+            </div>
         )
     }
 
     if (loading) {
-        return <p className="text-xs text-gray-500">Loading diff...</p>
+        return (
+            <div className="rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-500 shadow-sm">
+                Loading diff...
+            </div>
+        )
     }
 
-    return <div dangerouslySetInnerHTML={{ __html: diffHtml }} />
+    return (
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+            <div dangerouslySetInnerHTML={{ __html: diffHtml }} />
+        </div>
+    )
 }

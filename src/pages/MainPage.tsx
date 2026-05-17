@@ -398,8 +398,8 @@ function MainPage() {
     }
 
     return (
-        <div className="space-y-5">
-            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <>
+            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-md">
                 <h3 className="text-sm font-semibold text-gray-800">
                     Input sources
                 </h3>
@@ -419,7 +419,7 @@ function MainPage() {
                             )
                         }}
                     />
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+                    <div>
                         <label
                             htmlFor="reference-text"
                             className="block text-sm font-semibold text-gray-800"
@@ -453,7 +453,7 @@ function MainPage() {
                 </div>
             </section>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-md">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                         <h3 className="text-sm font-semibold text-gray-800">
@@ -473,7 +473,7 @@ function MainPage() {
                     </button>
                 </div>
 
-                <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+                <div className="mt-4">
                     <label
                         htmlFor="save-name"
                         className="block text-sm font-semibold text-gray-800"
@@ -661,25 +661,35 @@ function MainPage() {
                                     placeholder="Run the model to see transcription here"
                                 />
 
-                                <MetricsGrid
-                                    metrics={metricsEntry}
-                                    showTime={true}
-                                />
-
-                                <div className={diffContainerClassName}>
-                                    <ColoredDiff
-                                        enabled={isChecked}
-                                        referenceText={referenceText}
-                                        hypothesisText={transcriptionText}
-                                        modelName={diffLabel}
+                                <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Metrics
+                                    </p>
+                                    <MetricsGrid
+                                        metrics={metricsEntry}
+                                        showTime={true}
                                     />
+                                </div>
+
+                                <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Diff
+                                    </p>
+                                    <div className={diffContainerClassName}>
+                                        <ColoredDiff
+                                            enabled={isChecked}
+                                            referenceText={referenceText}
+                                            hypothesisText={transcriptionText}
+                                            modelName={diffLabel}
+                                        />
+                                    </div>
                                 </div>
                             </TranscriptionCard>
                         )
                     })}
                 </div>
             </section>
-        </div>
+        </>
     )
 }
 

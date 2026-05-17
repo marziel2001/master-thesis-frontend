@@ -6,7 +6,7 @@ import MetricsChartPanel from '../components/MetricsChartPanel'
 import TranscriptionCard from '../components/TranscriptionCard'
 import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
-import { formatRunLabel, loadHistory } from '../utils/resultsHistory'
+import { deleteRun, formatRunLabel, loadHistory } from '../utils/resultsHistory'
 import type { CompareEntry, EntryMetrics } from './ComparePage.types'
 import type { StoredRun } from '../utils/resultsHistory.types'
 
@@ -28,6 +28,7 @@ export default function ComparePage() {
     const [entries, setEntries] = useState<CompareEntry[]>([])
     const [history, setHistory] = useState<StoredRun[]>(() => loadHistory())
     const [selectedRunId, setSelectedRunId] = useState('')
+    const [deleteConfirmRunId, setDeleteConfirmRunId] = useState('')
     const [statusMessage, setStatusMessage] = useState('')
 
     const defaultModelId = models[0]?.id ?? ''
@@ -47,15 +48,21 @@ export default function ComparePage() {
             return
         }
 
-        setEntries((previous) =>
-            previous.length > 0
-                ? previous.map((entry) =>
-                      entry.modelId
-                          ? entry
-                          : { ...entry, modelId: defaultModelId }
-                  )
-                : [createEntry(defaultModelId)]
-        )
+        const timerId = window.setTimeout(() => {
+            setEntries((previous) =>
+                previous.length > 0
+                    ? previous.map((entry) =>
+                          entry.modelId
+                              ? entry
+                              : { ...entry, modelId: defaultModelId }
+                      )
+                    : [createEntry(defaultModelId)]
+            )
+        }, 0)
+
+        return () => {
+            window.clearTimeout(timerId)
+        }
     }, [defaultModelId])
 
     const updateEntry = (
@@ -164,9 +171,32 @@ export default function ComparePage() {
         setHistory(next)
     }
 
+    const handleDeleteSelectedRun = () => {
+        if (!selectedRunId) {
+            setStatusMessage('Select a history entry first.')
+            return
+        }
+
+        if (deleteConfirmRunId !== selectedRunId) {
+            setDeleteConfirmRunId(selectedRunId)
+            setStatusMessage('Click delete again to confirm removal.')
+            return
+        }
+
+        const next = deleteRun(selectedRunId)
+        setHistory(next)
+        setSelectedRunId('')
+        setDeleteConfirmRunId('')
+        setStatusMessage('History entry deleted.')
+        setReferenceText('')
+        setReferenceFileName('')
+        setEntries(defaultModelId ? [createEntry(defaultModelId)] : [])
+    }
+
     const handleSelectRun = (event: ChangeEvent<HTMLSelectElement>) => {
         const runId = event.target.value
         setSelectedRunId(runId)
+        setDeleteConfirmRunId('')
         const run = history.find((item) => item.id === runId)
         if (!run) {
             return
@@ -227,60 +257,89 @@ export default function ComparePage() {
                 </p>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <div className="flex flex-wrap items-center gap-3">
-                    <select
-                        className="w-full max-w-sm rounded-md border border-gray-300 bg-white p-2 text-sm"
-                        value={selectedRunId}
-                        onChange={handleSelectRun}
-                    >
-                        <option value="">Load from history</option>
-                        {history.map((run) => (
-                            <option key={run.id} value={run.id}>
-                                {formatRunLabel(run)}
-                            </option>
-                        ))}
-                    </select>
-                    <button
-                        className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700"
-                        onClick={handleReloadHistory}
-                    >
-                        Reload history
-                    </button>
+            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="space-y-4">
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <select
+                                className="w-full max-w-sm rounded-md border border-gray-300 bg-white p-2 text-sm"
+                                value={selectedRunId}
+                                onChange={handleSelectRun}
+                            >
+                                <option value="">Load from history</option>
+                                {history.map((run) => (
+                                    <option key={run.id} value={run.id}>
+                                        {formatRunLabel(run)}
+                                    </option>
+                                ))}
+                            </select>
+                            <button
+                                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700"
+                                onClick={handleReloadHistory}
+                            >
+                                Reload history
+                            </button>
+                            <button
+                                className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                                    selectedRunId
+                                        ? deleteConfirmRunId === selectedRunId
+                                            ? 'border border-red-600 bg-red-600 text-white'
+                                            : 'border border-red-300 bg-red-50 text-red-700'
+                                        : 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
+                                }`}
+                                onClick={handleDeleteSelectedRun}
+                                disabled={!selectedRunId}
+                                type="button"
+                            >
+                                {deleteConfirmRunId === selectedRunId
+                                    ? 'Confirm delete'
+                                    : 'Delete'}
+                            </button>
+                        </div>
+                        {deleteConfirmRunId === selectedRunId &&
+                        selectedRunId ? (
+                            <p className="mt-2 text-xs text-red-600">
+                                Click the delete button again to permanently
+                                remove this history entry.
+                            </p>
+                        ) : null}
+                    </div>
+
+                    <div className="space-y-3">
+                        <FilePicker
+                            label="Reference text"
+                            accept=".txt"
+                            fileName={referenceFileName}
+                            onFileChange={handleReferenceFile}
+                            buttonLabel="Wybierz plik"
+                        />
+                        <textarea
+                            className="min-h-32 w-full rounded-md border border-gray-300 bg-white p-3 text-sm text-gray-800"
+                            value={referenceText}
+                            onChange={(event) =>
+                                setReferenceText(event.target.value)
+                            }
+                            placeholder="Paste reference text here"
+                        />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button
+                            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white"
+                            onClick={handleComputeMetrics}
+                        >
+                            Compute metrics
+                        </button>
+                        <button
+                            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition active:translate-y-px active:shadow-none"
+                            onClick={handleAddEntry}
+                            disabled={!defaultModelId || modelCatalogLoading}
+                        >
+                            Add model
+                        </button>
+                    </div>
                 </div>
-            </div>
-
-            <div className="space-y-3">
-                <FilePicker
-                    label="Reference text"
-                    accept=".txt"
-                    fileName={referenceFileName}
-                    onFileChange={handleReferenceFile}
-                    buttonLabel="Wybierz plik"
-                />
-                <textarea
-                    className="min-h-32 w-full rounded-md border border-gray-300 bg-white p-3 text-sm text-gray-800"
-                    value={referenceText}
-                    onChange={(event) => setReferenceText(event.target.value)}
-                    placeholder="Paste reference text here"
-                />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-                <button
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white"
-                    onClick={handleComputeMetrics}
-                >
-                    Compute metrics
-                </button>
-                <button
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition active:translate-y-px active:shadow-none"
-                    onClick={handleAddEntry}
-                    disabled={!defaultModelId || modelCatalogLoading}
-                >
-                    Add model
-                </button>
-            </div>
+            </section>
 
             {statusMessage ? (
                 <p className="text-sm text-red-600">{statusMessage}</p>
