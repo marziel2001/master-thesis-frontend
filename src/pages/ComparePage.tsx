@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import ColoredDiff from '../components/ColoredDiff'
+import FilePicker from '../components/FilePicker'
 import MetricsGrid from '../components/MetricsGrid'
 import MetricsChartPanel from '../components/MetricsChartPanel'
 import TranscriptionCard from '../components/TranscriptionCard'
@@ -23,6 +24,7 @@ export default function ComparePage() {
         getModelLabel,
     } = useModelCatalog()
     const [referenceText, setReferenceText] = useState('')
+    const [referenceFileName, setReferenceFileName] = useState('')
     const [entries, setEntries] = useState<CompareEntry[]>([])
     const [history, setHistory] = useState<StoredRun[]>(() => loadHistory())
     const [selectedRunId, setSelectedRunId] = useState('')
@@ -34,6 +36,7 @@ export default function ComparePage() {
         id: Math.random().toString(36).slice(2),
         modelId,
         modelVersion: undefined,
+        fileName: '',
         text: '',
         metrics: EMPTY_METRICS,
         status: 'idle',
@@ -79,29 +82,32 @@ export default function ComparePage() {
         )
     }
 
-    const handleReferenceFile = async (
-        event: ChangeEvent<HTMLInputElement>
-    ) => {
-        const file = event.target.files?.[0]
+    const handleReferenceFile = async (file: File | null) => {
         if (!file) {
+            setReferenceFileName('')
             return
         }
 
         const text = await file.text()
         setReferenceText(text)
+        setReferenceFileName(file.name)
     }
 
-    const handleEntryFile = async (
-        entryId: string,
-        event: ChangeEvent<HTMLInputElement>
-    ) => {
-        const file = event.target.files?.[0]
+    const handleEntryFile = async (entryId: string, file: File | null) => {
         if (!file) {
+            updateEntry(entryId, (entry) => ({
+                ...entry,
+                fileName: '',
+            }))
             return
         }
 
         const text = await file.text()
-        updateEntry(entryId, (entry) => ({ ...entry, text }))
+        updateEntry(entryId, (entry) => ({
+            ...entry,
+            text,
+            fileName: file.name,
+        }))
     }
 
     const handleComputeMetrics = async () => {
@@ -167,12 +173,14 @@ export default function ComparePage() {
         }
 
         setReferenceText(run.referenceText)
+        setReferenceFileName('')
         setEntries(
             run.results.length > 0
                 ? run.results.map((result) => ({
                       id: Math.random().toString(36).slice(2),
                       modelId: result.model,
                       modelVersion: result.modelVersion,
+                      fileName: '',
                       text: result.transcription,
                       metrics: {
                           wer: result.wer,
@@ -243,17 +251,13 @@ export default function ComparePage() {
             </div>
 
             <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-3">
-                    <label className="text-sm font-medium text-gray-800">
-                        Reference text
-                    </label>
-                    <input
-                        type="file"
-                        accept=".txt"
-                        onChange={handleReferenceFile}
-                        className="block w-full max-w-xs text-sm"
-                    />
-                </div>
+                <FilePicker
+                    label="Reference text"
+                    accept=".txt"
+                    fileName={referenceFileName}
+                    onFileChange={handleReferenceFile}
+                    buttonLabel="Wybierz plik"
+                />
                 <textarea
                     className="min-h-32 w-full rounded-md border border-gray-300 bg-white p-3 text-sm text-gray-800"
                     value={referenceText}
@@ -352,19 +356,15 @@ export default function ComparePage() {
                                 </button>
                             }
                         >
-                            <div className="flex flex-wrap items-center gap-3">
-                                <label className="text-xs font-semibold text-gray-600">
-                                    Hypothesis text
-                                </label>
-                                <input
-                                    type="file"
-                                    accept=".txt"
-                                    onChange={(event) =>
-                                        handleEntryFile(entry.id, event)
-                                    }
-                                    className="block w-full max-w-xs text-sm"
-                                />
-                            </div>
+                            <FilePicker
+                                label="Hypothesis text"
+                                accept=".txt"
+                                fileName={entry.fileName}
+                                onFileChange={(file) =>
+                                    handleEntryFile(entry.id, file)
+                                }
+                                buttonLabel="Wybierz plik"
+                            />
 
                             <textarea
                                 className="mt-3 min-h-28 w-full rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"

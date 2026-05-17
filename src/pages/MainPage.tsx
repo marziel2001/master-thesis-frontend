@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import ColoredDiff from '../components/ColoredDiff'
+import FilePicker from '../components/FilePicker'
 import MetricsChartPanel from '../components/MetricsChartPanel'
 import MetricsGrid from '../components/MetricsGrid'
 import TranscriptionCard from '../components/TranscriptionCard'
@@ -42,6 +43,7 @@ function MainPage() {
         getVariants,
     } = useModelCatalog()
     const [file, setFile] = useState<File | null>(null)
+    const [fileName, setFileName] = useState('')
     const [referenceText, setReferenceText] = useState('')
     const [statusMessage, setStatusMessage] = useState('')
     const [historyMessage, setHistoryMessage] = useState('')
@@ -377,13 +379,14 @@ function MainPage() {
             </h2>
 
             <div className="mb-5 flex flex-wrap items-center gap-3">
-                <input
-                    className="block w-full max-w-sm rounded-md border border-gray-300 bg-white p-2 text-sm"
-                    type="file"
+                <FilePicker
+                    label="Audio file"
                     accept="audio/*"
-                    onChange={(event) =>
-                        setFile(event.target.files?.[0] ?? null)
-                    }
+                    fileName={fileName}
+                    onFileChange={(selectedFile) => {
+                        setFile(selectedFile)
+                        setFileName(selectedFile?.name ?? '')
+                    }}
                 />
                 <button
                     className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-blue-300"

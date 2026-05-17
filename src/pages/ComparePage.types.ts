@@ -10,6 +10,7 @@ export type CompareEntry = {
     id: string
     modelId: string
     modelVersion?: string
+    fileName: string
     text: string
     metrics: EntryMetrics
     status: EntryStatus
