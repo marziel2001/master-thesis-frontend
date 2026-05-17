@@ -5,4 +5,5 @@ export type MetricsGridProps = {
         rtTime?: number | null
     }
     showTime?: boolean
+    title?: string
 }

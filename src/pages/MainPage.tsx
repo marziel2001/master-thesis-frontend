@@ -661,15 +661,11 @@ function MainPage() {
                                     placeholder="Run the model to see transcription here"
                                 />
 
-                                <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                        Metrics
-                                    </p>
-                                    <MetricsGrid
-                                        metrics={metricsEntry}
-                                        showTime={true}
-                                    />
-                                </div>
+                                <MetricsGrid
+                                    metrics={metricsEntry}
+                                    showTime={true}
+                                    title="Metrics"
+                                />
 
                                 <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
                                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">

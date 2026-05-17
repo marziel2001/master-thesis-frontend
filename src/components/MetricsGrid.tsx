@@ -3,6 +3,7 @@ import type { MetricsGridProps } from './MetricsGrid.types'
 export default function MetricsGrid({
     metrics,
     showTime = true,
+    title,
 }: MetricsGridProps) {
     const hasMetrics = metrics.wer !== null && metrics.cer !== null
     const hasTime = metrics.rtTime !== null && metrics.rtTime !== undefined
@@ -10,6 +11,11 @@ export default function MetricsGrid({
 
     return (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+            {title ? (
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    {title}
+                </p>
+            ) : null}
             <div className={`grid ${gridClassName} gap-3 text-xs`}>
                 <div className="rounded-md border border-gray-200 bg-gray-50 p-2">
                     <p className="font-medium text-gray-600">WER</p>
