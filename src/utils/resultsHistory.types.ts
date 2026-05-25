@@ -5,6 +5,8 @@ export type StoredResult = {
     wer: number | null
     cer: number | null
     rtTime: number | null
+    rtf?: number | null
+    audioDuration?: number | null
 }
 
 export type StoredRun = {

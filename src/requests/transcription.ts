@@ -66,6 +66,10 @@ export async function transcribeAudio(
         typeof response.data?.rt_time === 'number'
             ? response.data.rt_time
             : null
+    const audioDuration =
+        typeof response.data?.audio_duration === 'number'
+            ? response.data.audio_duration
+            : null
     const modelName =
         typeof response.data?.model_name === 'string'
             ? response.data.model_name
@@ -88,6 +92,7 @@ export async function transcribeAudio(
         wer,
         cer,
         rtTime,
+        audioDuration,
         modelName,
         modelVersion,
         computeTime,

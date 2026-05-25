@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import ColoredDiff from '../components/ColoredDiff'
 import FilePicker from '../components/FilePicker'
 import MetricsChartPanel from '../components/MetricsChartPanel'
@@ -14,6 +14,7 @@ const EMPTY_METRICS: ModelMetrics = {
     wer: null,
     cer: null,
     rtTime: null,
+    rtf: null,
 }
 
 type FinishedModelResult = {
@@ -22,6 +23,8 @@ type FinishedModelResult = {
     wer: number | null
     cer: number | null
     rtTime: number | null
+    rtf: number | null
+    audioDuration: number | null
     modelVersion?: string
 }
 
@@ -32,6 +35,53 @@ const buildModelRecord = <T,>(
     Object.fromEntries(
         models.map((model) => [model.id, createValue(model.id)])
     ) as Record<string, T>
+
+const getAudioDuration = (audioFile: File): Promise<number | null> =>
+    new Promise((resolve) => {
+        const url = URL.createObjectURL(audioFile)
+        const audio = new Audio()
+        let settled = false
+
+        const cleanup = () => {
+            if (settled) {
+                return
+            }
+            settled = true
+            audio.src = ''
+            URL.revokeObjectURL(url)
+        }
+
+        audio.preload = 'metadata'
+        audio.onloadedmetadata = () => {
+            const duration =
+                Number.isFinite(audio.duration) && audio.duration > 0
+                    ? audio.duration
+                    : null
+            cleanup()
+            resolve(duration)
+        }
+        audio.onerror = () => {
+            cleanup()
+            resolve(null)
+        }
+        audio.src = url
+    })
+
+const calculateRtf = (rtTime: number | null, duration: number | null) => {
+    if (typeof rtTime !== 'number' || typeof duration !== 'number') {
+        return null
+    }
+
+    if (
+        !Number.isFinite(rtTime) ||
+        !Number.isFinite(duration) ||
+        duration <= 0
+    ) {
+        return null
+    }
+
+    return rtTime / duration
+}
 
 function MainPage() {
     const {
@@ -45,6 +95,8 @@ function MainPage() {
     const [file, setFile] = useState<File | null>(null)
     const [fileName, setFileName] = useState('')
     const [saveName, setSaveName] = useState('')
+    const [audioDuration, setAudioDuration] = useState<number | null>(null)
+    const audioDurationRequestId = useRef(0)
     const [referenceText, setReferenceText] = useState('')
     const [referenceFileName, setReferenceFileName] = useState('')
     const [statusMessage, setStatusMessage] = useState('')
@@ -72,6 +124,23 @@ function MainPage() {
     const [modelVariants, setModelVariants] = useState<Record<string, string>>(
         {}
     )
+
+    const resolveAudioDuration = async (selectedFile: File | null) => {
+        audioDurationRequestId.current += 1
+        const requestId = audioDurationRequestId.current
+
+        if (!selectedFile) {
+            setAudioDuration(null)
+            return
+        }
+
+        const duration = await getAudioDuration(selectedFile)
+        if (audioDurationRequestId.current !== requestId) {
+            return
+        }
+
+        setAudioDuration(duration)
+    }
 
     const buildDefaultSaveName = (selectedFile: File | null) => {
         if (!selectedFile) {
@@ -156,19 +225,33 @@ function MainPage() {
 
         try {
             const selectedVariant = modelVariants[model] || ''
-            const { transcription, wer, cer, rtTime, modelVersion } =
-                await transcribeAudio(
-                    model,
-                    file,
-                    referenceText,
-                    selectedVariant
-                )
+            const {
+                transcription,
+                wer,
+                cer,
+                rtTime,
+                modelVersion,
+                audioDuration: responseAudioDuration,
+            } = await transcribeAudio(
+                model,
+                file,
+                referenceText,
+                selectedVariant
+            )
+            let resolvedAudioDuration = responseAudioDuration ?? audioDuration
+            if (resolvedAudioDuration === null && file) {
+                resolvedAudioDuration = await getAudioDuration(file)
+            }
+            if (resolvedAudioDuration !== null) {
+                setAudioDuration(resolvedAudioDuration)
+            }
+            const rtf = calculateRtf(rtTime, resolvedAudioDuration)
 
             setModelResult(
                 model,
                 transcription || 'No transcription text in response.'
             )
-            setModelMetrics(model, { wer, cer, rtTime })
+            setModelMetrics(model, { wer, cer, rtTime, rtf })
             setModelStatus(model, 'success')
             setModelVersion(model, modelVersion || selectedVariant)
 
@@ -179,6 +262,8 @@ function MainPage() {
                 wer,
                 cer,
                 rtTime,
+                rtf,
+                audioDuration: resolvedAudioDuration,
                 modelVersion: modelVersion || selectedVariant,
             }
         } catch (error) {
@@ -213,11 +298,16 @@ function MainPage() {
                 hypothesisText: transcription,
                 normalize: true,
             })
+            const currentMetrics = metrics[model] ?? EMPTY_METRICS
+            const rtf =
+                currentMetrics.rtf ??
+                calculateRtf(currentMetrics.rtTime, audioDuration)
 
             setModelMetrics(model, {
                 wer,
                 cer,
-                rtTime: metrics[model]?.rtTime ?? null,
+                rtTime: currentMetrics.rtTime ?? null,
+                rtf,
             })
         } catch (error) {
             console.error(error)
@@ -273,6 +363,7 @@ function MainPage() {
                         wer: metrics[model.id]?.wer ?? null,
                         cer: metrics[model.id]?.cer ?? null,
                         rtTime: metrics[model.id]?.rtTime ?? null,
+                        rtf: metrics[model.id]?.rtf ?? null,
                     },
                 ])
             ),
@@ -306,6 +397,13 @@ function MainPage() {
                     wer: metrics[model.id]?.wer ?? null,
                     cer: metrics[model.id]?.cer ?? null,
                     rtTime: metrics[model.id]?.rtTime ?? null,
+                    rtf:
+                        metrics[model.id]?.rtf ??
+                        calculateRtf(
+                            metrics[model.id]?.rtTime ?? null,
+                            audioDuration
+                        ),
+                    audioDuration,
                 }
             })
             .filter(
@@ -432,6 +530,7 @@ function MainPage() {
                                     ? buildDefaultSaveName(selectedFile)
                                     : ''
                             )
+                            void resolveAudioDuration(selectedFile)
                         }}
                     />
                     <div>
@@ -548,7 +647,7 @@ function MainPage() {
                 <div className="mt-5">
                     <MetricsChartPanel
                         metricsByModel={chartMetrics}
-                        title="WER/CER overview"
+                        title="Metrics overview"
                     />
                 </div>
 

@@ -14,6 +14,7 @@ const EMPTY_METRICS: EntryMetrics = {
     wer: null,
     cer: null,
     rtTime: null,
+    rtf: null,
 }
 
 export default function ComparePage() {
@@ -152,7 +153,7 @@ export default function ComparePage() {
 
                     updateEntry(entry.id, (current) => ({
                         ...current,
-                        metrics: { ...metrics, rtTime: null },
+                        metrics: { ...metrics, rtTime: null, rtf: null },
                         status: 'success',
                     }))
                 } catch (error) {
@@ -216,6 +217,7 @@ export default function ComparePage() {
                           wer: result.wer,
                           cer: result.cer,
                           rtTime: result.rtTime,
+                          rtf: result.rtf ?? null,
                       },
                       status: 'success',
                   }))
@@ -240,6 +242,7 @@ export default function ComparePage() {
                         wer: entry.metrics.wer,
                         cer: entry.metrics.cer,
                         rtTime: entry.metrics.rtTime,
+                        rtf: entry.metrics.rtf,
                     },
                 ]
             })
@@ -351,7 +354,7 @@ export default function ComparePage() {
 
             <MetricsChartPanel
                 metricsByModel={metricsByModel}
-                title="Compare WER/CER"
+                title="Compare metrics"
             />
 
             <div className="grid grid-cols-1 gap-4">

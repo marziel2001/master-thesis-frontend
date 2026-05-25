@@ -249,7 +249,7 @@ export default function MetricsChartPanel({
     metricsByModel,
     title = 'Metrics overview',
     emptyTitle = 'Your comparison chart will appear here',
-    emptyDescription = 'Click Count metrics to compare the entered texts and visualize WER, CER, and processing time in this area.',
+    emptyDescription = 'Click Count metrics to compare the entered texts and visualize WER, CER, processing time, and RTF in this area.',
 }: MetricsChartPanelProps) {
     const [chartMode, setChartMode] = useState<ChartMode>('chartjs')
     const entries = Object.entries(metricsByModel)
@@ -275,10 +275,18 @@ export default function MetricsChartPanel({
             value: metrics.rtTime as number,
         }))
 
+    const rtfItems: MetricPoint[] = entries
+        .filter(([, metrics]) => typeof metrics.rtf === 'number')
+        .map(([model, metrics]) => ({
+            model,
+            value: metrics.rtf as number,
+        }))
+
     if (
         werItems.length === 0 &&
         cerItems.length === 0 &&
-        timeItems.length === 0
+        timeItems.length === 0 &&
+        rtfItems.length === 0
     ) {
         return (
             <section className="rounded-xl border border-dashed border-gray-300 bg-white p-4 shadow-sm">
@@ -324,7 +332,7 @@ export default function MetricsChartPanel({
                 Switch views to compare the new Chart.js charts with the
                 previous bar layout. PNG download is available in Chart.js mode.
             </p>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <MetricChart
                     title="WER"
                     items={werItems}
@@ -338,6 +346,12 @@ export default function MetricsChartPanel({
                 <MetricChart
                     title="Processing time (s)"
                     items={timeItems}
+                    useRelativeScale={true}
+                    chartMode={chartMode}
+                />
+                <MetricChart
+                    title="RTF"
+                    items={rtfItems}
                     useRelativeScale={true}
                     chartMode={chartMode}
                 />

@@ -5,6 +5,7 @@ export type MetricsChartPanelProps = {
             wer: number | null
             cer: number | null
             rtTime: number | null
+            rtf: number | null
         }
     >
     title?: string
