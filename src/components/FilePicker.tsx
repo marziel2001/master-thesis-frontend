@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import styles from '../styles/theme.module.css'
 
 type FilePickerProps = {
     label: string
@@ -26,11 +27,11 @@ export default function FilePicker({
             <div>
                 <label
                     htmlFor={inputId}
-                    className="block text-sm font-semibold text-gray-800"
+                    className={`block text-sm font-semibold ${styles.textPrimary}`}
                 >
                     {label}
                 </label>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className={`mt-1 text-xs ${styles.textMuted}`}>
                     {fileName || placeholder}
                 </p>
             </div>
@@ -46,7 +47,7 @@ export default function FilePicker({
                 />
                 <label
                     htmlFor={inputId}
-                    className="cursor-pointer rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 active:translate-y-px"
+                    className={`cursor-pointer rounded-md px-4 py-2 text-sm font-medium shadow-sm transition hover:brightness-105 active:translate-y-px ${styles.border} ${styles.surface} ${styles.textPrimary}`}
                 >
                     {buttonLabel}
                 </label>
@@ -57,7 +58,9 @@ export default function FilePicker({
     return compact ? (
         content
     ) : (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+        <div
+            className={`rounded-xl p-4 shadow-sm ${styles.border} ${styles.surfaceMuted}`}
+        >
             {content}
         </div>
     )

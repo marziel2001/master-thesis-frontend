@@ -7,6 +7,7 @@ import TranscriptionCard from '../components/TranscriptionCard'
 import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
 import { deleteRun, formatRunLabel, loadHistory } from '../utils/resultsHistory'
+import styles from '../styles/theme.module.css'
 import type { CompareEntry, EntryMetrics } from './ComparePage.types'
 import type { StoredRun } from '../utils/resultsHistory.types'
 
@@ -252,20 +253,24 @@ export default function ComparePage() {
     return (
         <div className="space-y-6">
             <div className="space-y-2">
-                <h2 className="text-2xl font-semibold text-gray-900">
+                <h2 className={`text-2xl font-semibold ${styles.textPrimary}`}>
                     Results reader
                 </h2>
-                <p className="text-sm text-gray-600">
+                <p className={`text-sm ${styles.textMuted}`}>
                     Compare any text outputs without re-running transcription.
                 </p>
             </div>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <section
+                className={`rounded-xl p-4 shadow-sm ${styles.surface} ${styles.border}`}
+            >
                 <div className="space-y-4">
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+                    <div
+                        className={`rounded-xl p-4 shadow-sm ${styles.surfaceMuted} ${styles.border}`}
+                    >
                         <div className="flex flex-wrap items-center gap-3">
                             <select
-                                className="w-full max-w-sm rounded-md border border-gray-300 bg-white p-2 text-sm"
+                                className={`w-full max-w-sm rounded-md p-2 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                                 value={selectedRunId}
                                 onChange={handleSelectRun}
                             >
@@ -277,7 +282,7 @@ export default function ComparePage() {
                                 ))}
                             </select>
                             <button
-                                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700"
+                                className={`rounded-md px-4 py-2 text-sm font-medium ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                                 onClick={handleReloadHistory}
                             >
                                 Reload history
@@ -286,9 +291,9 @@ export default function ComparePage() {
                                 className={`rounded-md px-4 py-2 text-sm font-medium transition ${
                                     selectedRunId
                                         ? deleteConfirmRunId === selectedRunId
-                                            ? 'border border-red-600 bg-red-600 text-white'
-                                            : 'border border-red-300 bg-red-50 text-red-700'
-                                        : 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-400'
+                                            ? styles.buttonDangerSolid
+                                            : styles.buttonDangerSoft
+                                        : styles.buttonDisabled
                                 }`}
                                 onClick={handleDeleteSelectedRun}
                                 disabled={!selectedRunId}
@@ -301,7 +306,7 @@ export default function ComparePage() {
                         </div>
                         {deleteConfirmRunId === selectedRunId &&
                         selectedRunId ? (
-                            <p className="mt-2 text-xs text-red-600">
+                            <p className={`mt-2 text-xs ${styles.textMuted}`}>
                                 Click the delete button again to permanently
                                 remove this history entry.
                             </p>
@@ -317,7 +322,7 @@ export default function ComparePage() {
                             buttonLabel="Wybierz plik"
                         />
                         <textarea
-                            className="min-h-32 w-full rounded-md border border-gray-300 bg-white p-3 text-sm text-gray-800"
+                            className={`min-h-32 w-full rounded-md p-3 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                             value={referenceText}
                             onChange={(event) =>
                                 setReferenceText(event.target.value)
@@ -334,7 +339,7 @@ export default function ComparePage() {
                             Compute metrics
                         </button>
                         <button
-                            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition active:translate-y-px active:shadow-none"
+                            className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                             onClick={handleAddEntry}
                             disabled={!defaultModelId || modelCatalogLoading}
                         >
@@ -378,11 +383,13 @@ export default function ComparePage() {
                             }
                             headerExtras={
                                 <>
-                                    <label className="text-xs font-semibold text-gray-600">
+                                    <label
+                                        className={`text-xs font-semibold ${styles.textMuted}`}
+                                    >
                                         Model
                                     </label>
                                     <select
-                                        className="w-full max-w-xs rounded-md border border-gray-300 bg-white p-2 text-sm"
+                                        className={`w-full max-w-xs rounded-md p-2 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                                         value={entry.modelId}
                                         onChange={(event) =>
                                             updateEntry(
@@ -429,7 +436,7 @@ export default function ComparePage() {
                             />
 
                             <textarea
-                                className="mt-3 min-h-28 w-full rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"
+                                className={`mt-3 min-h-28 w-full rounded-md p-3 text-sm ${styles.surfaceMuted} ${styles.border} ${styles.textPrimary}`}
                                 value={entry.text}
                                 onChange={(event) =>
                                     updateEntry(entry.id, (current) => ({

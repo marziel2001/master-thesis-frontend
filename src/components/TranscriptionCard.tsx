@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import styles from '../styles/theme.module.css'
 
 export type TranscriptionCardStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -13,10 +14,10 @@ export type TranscriptionCardProps = {
 }
 
 const STATUS_STYLES: Record<TranscriptionCardStatus, string> = {
-    idle: 'border-gray-200 bg-white',
-    loading: 'border-yellow-300 bg-yellow-300',
-    success: 'border-green-300 bg-green-200',
-    error: 'border-red-300 bg-red-200',
+    idle: styles.card,
+    loading: `${styles.card} ${styles.statusLoading}`,
+    success: `${styles.card} ${styles.statusSuccess}`,
+    error: `${styles.card} ${styles.statusError}`,
 }
 
 export default function TranscriptionCard({
@@ -30,7 +31,7 @@ export default function TranscriptionCard({
 }: TranscriptionCardProps) {
     return (
         <section
-            className={`w-full rounded-xl border p-4 shadow-sm transition-all duration-300 ease-out ${
+            className={`w-full rounded-xl p-4 shadow-sm transition-all duration-300 ease-out ${
                 STATUS_STYLES[status]
             }`}
         >
@@ -40,11 +41,13 @@ export default function TranscriptionCard({
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-3">
                         <div>
-                            <p className="text-sm font-semibold text-gray-800">
+                            <p
+                                className={`text-sm font-semibold ${styles.textPrimary}`}
+                            >
                                 {title}
                             </p>
                             {subtitle ? (
-                                <p className="text-xs text-gray-600">
+                                <p className={`text-xs ${styles.textMuted}`}>
                                     {subtitle}
                                 </p>
                             ) : null}

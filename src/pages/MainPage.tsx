@@ -5,6 +5,7 @@ import FilePicker from '../components/FilePicker'
 import MetricsChartPanel from '../components/MetricsChartPanel'
 import MetricsGrid from '../components/MetricsGrid'
 import TranscriptionCard from '../components/TranscriptionCard'
+import styles from '../styles/theme.module.css'
 import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
 import { transcribeAudio } from '../requests/transcription'
@@ -513,8 +514,10 @@ function MainPage() {
 
     return (
         <>
-            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-md">
-                <h3 className="text-sm font-semibold text-gray-800">
+            <section
+                className={`rounded-xl p-4 shadow-md ${styles.surface} ${styles.border}`}
+            >
+                <h3 className={`text-sm font-semibold ${styles.textPrimary}`}>
                     Input sources
                 </h3>
                 <div className="mt-4 space-y-4">
@@ -537,11 +540,11 @@ function MainPage() {
                     <div>
                         <label
                             htmlFor="reference-text"
-                            className="block text-sm font-semibold text-gray-800"
+                            className={`block text-sm font-semibold ${styles.textPrimary}`}
                         >
                             Reference text
                         </label>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className={`mt-1 text-xs ${styles.textMuted}`}>
                             Text used for WER, CER and colored diff.
                         </p>
                         <div className="mt-3">
@@ -557,7 +560,7 @@ function MainPage() {
                         </div>
                         <textarea
                             id="reference-text"
-                            className="mt-3 min-h-28 w-full rounded-md border border-gray-300 bg-white p-3 text-sm text-gray-800"
+                            className={`mt-3 min-h-28 w-full rounded-md p-3 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                             value={referenceText}
                             onChange={(event) =>
                                 setReferenceText(event.target.value)
@@ -568,19 +571,23 @@ function MainPage() {
                 </div>
             </section>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-md">
+            <section
+                className={`rounded-xl p-4 shadow-md ${styles.surface} ${styles.border}`}
+            >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-semibold text-gray-800">
+                        <h3
+                            className={`text-sm font-semibold ${styles.textPrimary}`}
+                        >
                             Saved results
                         </h3>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className={`mt-1 text-xs ${styles.textMuted}`}>
                             Give this run a name before saving so it is easier
                             to find later.
                         </p>
                     </div>
                     <button
-                        className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:text-gray-400"
+                        className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:text-gray-400 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                         onClick={handleSaveRun}
                         disabled={!hasAnyResult}
                     >
@@ -591,19 +598,19 @@ function MainPage() {
                 <div className="mt-4">
                     <label
                         htmlFor="save-name"
-                        className="block text-sm font-semibold text-gray-800"
+                        className={`block text-sm font-semibold ${styles.textPrimary}`}
                     >
                         Saved entry name
                     </label>
                     <input
                         id="save-name"
                         type="text"
-                        className="mt-2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800"
+                        className={`mt-2 w-full rounded-md px-3 py-2 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                         value={saveName}
                         onChange={(event) => setSaveName(event.target.value)}
                         placeholder="Enter a custom name"
                     />
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className={`mt-2 text-xs ${styles.textMuted}`}>
                         Default name is based on the audio file and the current
                         date.
                     </p>
@@ -637,7 +644,7 @@ function MainPage() {
                         Send to selected models
                     </button>
                     <button
-                        className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition active:translate-y-px active:shadow-none"
+                        className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                         onClick={() => setAllModelsEnabled(!allModelsEnabled)}
                         type="button"
                     >
@@ -681,11 +688,15 @@ function MainPage() {
                                     status={statusByModel[modelId] ?? 'idle'}
                                     title={modelLabel}
                                     headerContent={
-                                        <div className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-                                            <label className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                                        <div
+                                            className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 ${styles.surfaceMuted} ${styles.border}`}
+                                        >
+                                            <label
+                                                className={`flex items-center gap-2 text-xs font-medium ${styles.textMuted}`}
+                                            >
                                                 <input
                                                     type="checkbox"
-                                                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                                    className={`h-4 w-4 rounded ${styles.checkbox}`}
                                                     checked={isChecked}
                                                     onChange={(event) =>
                                                         updateModelEnabled(
@@ -696,12 +707,14 @@ function MainPage() {
                                                 />
                                             </label>
                                             <div className="min-w-0 flex-1 text-center">
-                                                <p className="truncate text-sm font-semibold text-gray-800">
+                                                <p
+                                                    className={`truncate text-sm font-semibold ${styles.textPrimary}`}
+                                                >
                                                     {modelLabel}
                                                 </p>
                                             </div>
                                             <button
-                                                className="rounded-md border border-gray-300 bg-white p-1.5 text-gray-700 transition hover:bg-gray-50"
+                                                className={`rounded-md p-1.5 transition hover:brightness-105 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                                                 onClick={() =>
                                                     toggleExpandedModel(modelId)
                                                 }
@@ -729,13 +742,15 @@ function MainPage() {
                                     }
                                 >
                                     <div className="flex flex-wrap items-center justify-between gap-3">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        <p
+                                            className={`text-xs font-semibold uppercase tracking-wide ${styles.textMuted}`}
+                                        >
                                             Transcription
                                         </p>
                                         <div className="flex flex-wrap items-center gap-2">
                                             {modelVariantOptions.length > 0 ? (
                                                 <select
-                                                    className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs"
+                                                    className={`rounded-md px-2 py-1 text-xs ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                                                     value={selectedVariant}
                                                     onChange={(event) =>
                                                         updateModelVariant(
@@ -757,7 +772,7 @@ function MainPage() {
                                                 </select>
                                             ) : null}
                                             <button
-                                                className="rounded-md border border-gray-300 bg-white p-1.5 text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+                                                className={`rounded-md p-1.5 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                                                 onClick={() =>
                                                     void runTranscriptionForModel(
                                                         modelId
@@ -784,7 +799,7 @@ function MainPage() {
                                         </div>
                                     </div>
                                     <textarea
-                                        className="mt-2 min-h-28 w-full rounded-md border border-gray-300 bg-gray-50 p-3 text-sm text-gray-800"
+                                        className={`mt-2 min-h-28 w-full rounded-md p-3 text-sm ${styles.surfaceMuted} ${styles.border} ${styles.textPrimary}`}
                                         value={transcriptionText}
                                         readOnly
                                         placeholder="Run the model to see transcription here"
@@ -801,7 +816,7 @@ function MainPage() {
                                         }
                                         footer={
                                             <button
-                                                className="rounded-md border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
+                                                className={`rounded-md px-3 py-1.5 text-xs font-medium ${styles.buttonAccentSoft}`}
                                                 onClick={() =>
                                                     void recalculateMetricsForModel(
                                                         modelId

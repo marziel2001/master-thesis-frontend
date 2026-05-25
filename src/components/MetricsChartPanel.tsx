@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Chart from 'chart.js/auto'
+import styles from '../styles/theme.module.css'
 import type {
     MetricChartProps,
     MetricPoint,
@@ -161,8 +162,10 @@ function MetricChart({
 
     if (items.length === 0) {
         return (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs text-gray-500">
-                <p className="font-semibold text-gray-700">{title}</p>
+            <div
+                className={`rounded-lg p-3 text-xs ${styles.border} ${styles.surfaceMuted} ${styles.textMuted}`}
+            >
+                <p className={`font-semibold ${styles.textPrimary}`}>{title}</p>
                 <p className="mt-2">No data yet.</p>
             </div>
         )
@@ -174,25 +177,29 @@ function MetricChart({
 
     if (chartMode === 'chartjs') {
         return (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 shadow-sm">
+            <div
+                className={`rounded-lg p-3 shadow-sm ${styles.border} ${styles.surfaceMuted}`}
+            >
                 <div className="flex items-center justify-between gap-3">
                     <div>
-                        <p className="text-xs font-semibold text-gray-700">
+                        <p
+                            className={`text-xs font-semibold ${styles.textPrimary}`}
+                        >
                             {title}
                         </p>
-                        <p className="text-[11px] text-gray-500">
+                        <p className={`text-[11px] ${styles.textMuted}`}>
                             Chart.js view
                         </p>
                     </div>
                     <button
-                        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 ${styles.border} ${styles.surface} ${styles.textPrimary}`}
                         onClick={handleDownload}
                         type="button"
                     >
                         Download PNG
                     </button>
                 </div>
-                <div className="mt-3 h-64 rounded-md bg-white p-2">
+                <div className={`mt-3 h-64 rounded-md p-2 ${styles.surface}`}>
                     <canvas ref={canvasRef} />
                 </div>
             </div>
@@ -200,8 +207,12 @@ function MetricChart({
     }
 
     return (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-            <p className="text-xs font-semibold text-gray-700">{title}</p>
+        <div
+            className={`rounded-lg p-3 ${styles.border} ${styles.surfaceMuted}`}
+        >
+            <p className={`text-xs font-semibold ${styles.textPrimary}`}>
+                {title}
+            </p>
             <div className="mt-2 space-y-2">
                 {items.map((item) => {
                     const percent = getBarPercent(
@@ -213,17 +224,21 @@ function MetricChart({
                     return (
                         <div key={item.model} className="space-y-1">
                             <div className="flex items-center justify-between text-xs">
-                                <span className="font-medium text-gray-700">
+                                <span
+                                    className={`font-medium ${styles.textPrimary}`}
+                                >
                                     {item.model}
                                 </span>
-                                <span className="text-gray-500">
+                                <span className={styles.textMuted}>
                                     {formatMetricValue(
                                         item.value,
                                         useRelativeScale
                                     )}
                                 </span>
                             </div>
-                            <div className="h-2 w-full rounded-full bg-gray-200">
+                            <div
+                                className={`h-2 w-full rounded-full ${styles.barTrack}`}
+                            >
                                 <div
                                     className="h-2 rounded-full bg-blue-500"
                                     style={{ width: `${percent}%` }}
@@ -289,10 +304,18 @@ export default function MetricsChartPanel({
         rtfItems.length === 0
     ) {
         return (
-            <section className="rounded-xl border border-dashed border-gray-300 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-                <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                    <p className="font-medium text-gray-800">{emptyTitle}</p>
+            <section
+                className={`rounded-xl p-4 shadow-sm ${styles.surface} ${styles.border}`}
+            >
+                <h3 className={`text-sm font-semibold ${styles.textPrimary}`}>
+                    {title}
+                </h3>
+                <div
+                    className={`mt-3 rounded-lg p-4 text-sm ${styles.surfaceMuted} ${styles.border} ${styles.textMuted}`}
+                >
+                    <p className={`font-medium ${styles.textPrimary}`}>
+                        {emptyTitle}
+                    </p>
                     <p className="mt-1">{emptyDescription}</p>
                 </div>
             </section>
@@ -300,15 +323,21 @@ export default function MetricsChartPanel({
     }
 
     return (
-        <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <section
+            className={`rounded-xl p-4 shadow-sm ${styles.surface} ${styles.border}`}
+        >
             <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-                <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1 text-xs font-medium">
+                <h3 className={`text-sm font-semibold ${styles.textPrimary}`}>
+                    {title}
+                </h3>
+                <div
+                    className={`inline-flex rounded-lg p-1 text-xs font-medium ${styles.surfaceMuted} ${styles.border}`}
+                >
                     <button
                         className={`rounded-md px-3 py-1.5 transition ${
                             chartMode === 'chartjs'
                                 ? 'bg-gray-900 text-white shadow-sm'
-                                : 'text-gray-600 hover:bg-white'
+                                : `${styles.textMuted} ${styles.surface}`
                         }`}
                         onClick={() => setChartMode('chartjs')}
                         type="button"
@@ -319,7 +348,7 @@ export default function MetricsChartPanel({
                         className={`rounded-md px-3 py-1.5 transition ${
                             chartMode === 'classic'
                                 ? 'bg-gray-900 text-white shadow-sm'
-                                : 'text-gray-600 hover:bg-white'
+                                : `${styles.textMuted} ${styles.surface}`
                         }`}
                         onClick={() => setChartMode('classic')}
                         type="button"
@@ -328,7 +357,7 @@ export default function MetricsChartPanel({
                     </button>
                 </div>
             </div>
-            <p className="mt-2 text-xs text-gray-500">
+            <p className={`mt-2 text-xs ${styles.textMuted}`}>
                 Switch views to compare the new Chart.js charts with the
                 previous bar layout. PNG download is available in Chart.js mode.
             </p>

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { getDiffHtml } from '../requests/diff'
 import type { ColoredDiffProps } from './ColoredDiff.types'
+import styles from '../styles/theme.module.css'
 
 export default function ColoredDiff({
     referenceText,
@@ -13,9 +14,13 @@ export default function ColoredDiff({
     const [loading, setLoading] = useState(false)
 
     const renderCard = (content: ReactNode) => (
-        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+        <div
+            className={`rounded-xl p-3 shadow-sm ${styles.border} ${styles.surface}`}
+        >
             {title ? (
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <p
+                    className={`mb-2 text-xs font-semibold uppercase tracking-wide ${styles.textMuted}`}
+                >
                     {title}
                 </p>
             ) : null}
@@ -72,7 +77,7 @@ export default function ColoredDiff({
 
     if (!referenceText.trim()) {
         return renderCard(
-            <p className="text-xs text-gray-500">
+            <p className={`text-xs ${styles.textMuted}`}>
                 Add reference text to see notebook-style diff.
             </p>
         )
@@ -80,7 +85,7 @@ export default function ColoredDiff({
 
     if (!hypothesisText.trim()) {
         return renderCard(
-            <p className="text-xs text-gray-500">
+            <p className={`text-xs ${styles.textMuted}`}>
                 Run transcription to see notebook-style diff.
             </p>
         )
@@ -88,7 +93,7 @@ export default function ColoredDiff({
 
     if (loading) {
         return renderCard(
-            <p className="text-xs text-gray-500">Loading diff...</p>
+            <p className={`text-xs ${styles.textMuted}`}>Loading diff...</p>
         )
     }
 

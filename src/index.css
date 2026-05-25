@@ -17,6 +17,6 @@
 
 body {
     margin: 0;
-    background: #f3f4f6;
-    color: #111827;
+    background: var(--color-bg);
+    color: var(--color-text);
 }
