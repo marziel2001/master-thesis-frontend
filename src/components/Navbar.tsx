@@ -21,7 +21,7 @@ export default function Navbar() {
                     Transkrypcja na żywo
                 </NavLink> */}
                 <NavLink className={getLinkStyle} to="/compare">
-                    Diff & Metrics
+                    Results reader
                 </NavLink>
                 <NavLink className={getLinkStyle} to="/about">
                     About

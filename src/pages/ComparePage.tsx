@@ -253,7 +253,7 @@ export default function ComparePage() {
         <div className="space-y-6">
             <div className="space-y-2">
                 <h2 className="text-2xl font-semibold text-gray-900">
-                    Text diff and metrics
+                    Results reader
                 </h2>
                 <p className="text-sm text-gray-600">
                     Compare any text outputs without re-running transcription.
