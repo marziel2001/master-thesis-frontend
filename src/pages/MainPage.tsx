@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Maximize2, Minimize2, RotateCcw } from 'lucide-react'
 import ColoredDiff from '../components/ColoredDiff'
 import FilePicker from '../components/FilePicker'
 import MetricsChartPanel from '../components/MetricsChartPanel'
@@ -713,23 +714,15 @@ function MainPage() {
                                                 aria-pressed={isExpanded}
                                             >
                                                 {isExpanded ? (
-                                                    <svg
+                                                    <Minimize2
                                                         aria-hidden="true"
-                                                        viewBox="0 0 20 20"
                                                         className="h-4 w-4"
-                                                        fill="currentColor"
-                                                    >
-                                                        <path d="M5 5h4V3H3v6h2V5Zm6-2v2h4v4h2V3h-6Zm4 14h-4v2h6v-6h-2v4ZM5 11H3v6h6v-2H5v-4Z" />
-                                                    </svg>
+                                                    />
                                                 ) : (
-                                                    <svg
+                                                    <Maximize2
                                                         aria-hidden="true"
-                                                        viewBox="0 0 20 20"
                                                         className="h-4 w-4"
-                                                        fill="currentColor"
-                                                    >
-                                                        <path d="M3 3h6v2H5v4H3V3Zm8 0h6v6h-2V5h-4V3ZM5 11v4h4v2H3v-6h2Zm12 0v6h-6v-2h4v-4h2Z" />
-                                                    </svg>
+                                                    />
                                                 )}
                                             </button>
                                         </div>
@@ -783,14 +776,10 @@ function MainPage() {
                                                 }
                                                 type="button"
                                             >
-                                                <svg
+                                                <RotateCcw
                                                     aria-hidden="true"
-                                                    viewBox="0 0 20 20"
                                                     className="h-4 w-4"
-                                                    fill="currentColor"
-                                                >
-                                                    <path d="M10 3a7 7 0 1 1-6.32 4H1.5a.5.5 0 0 1-.5-.5V3.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V5h2.16A7 7 0 0 1 10 3Zm0 2a5 5 0 1 0 4.58 3H12.5a.5.5 0 0 1 0-1h3.5a.5.5 0 0 1 .5.5v3.5a.5.5 0 0 1-1 0V9.64A5 5 0 0 0 10 5Z" />
-                                                </svg>
+                                                />
                                             </button>
                                         </div>
                                     </div>
