@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import ColoredDiff from '../components/ColoredDiff'
 import FilePicker from '../components/FilePicker'
 import MetricsGrid from '../components/MetricsGrid'
@@ -84,8 +84,21 @@ export default function ComparePage() {
     const [deleteConfirmRunId, setDeleteConfirmRunId] = useState('')
     const [saveName, setSaveName] = useState('')
     const [statusMessage, setStatusMessage] = useState('')
+    const referenceVersionRef = useRef(0)
+    const [referenceVersion, setReferenceVersion] = useState(0)
 
     const defaultModelId = models[0]?.id ?? ''
+
+    const bumpReferenceVersion = () => {
+        referenceVersionRef.current += 1
+        setReferenceVersion(referenceVersionRef.current)
+        return referenceVersionRef.current
+    }
+
+    const setReferenceTextWithVersion = (text: string) => {
+        setReferenceText(text)
+        return bumpReferenceVersion()
+    }
 
     const createEntry = (modelId: string): CompareEntry => ({
         id: Math.random().toString(36).slice(2),
@@ -93,7 +106,10 @@ export default function ComparePage() {
         modelVersion: undefined,
         fileName: '',
         text: '',
+        textVersion: 0,
         metrics: EMPTY_METRICS,
+        metricsVersion: referenceVersionRef.current,
+        metricsTextVersion: 0,
         audioDuration: null,
         status: 'idle',
     })
@@ -146,19 +162,19 @@ export default function ComparePage() {
 
     const normalizeAndSetReferenceText = async (text: string) => {
         const normalized = await normalizeText({ text })
-        setReferenceText(normalized)
+        setReferenceTextWithVersion(normalized)
         return normalized
     }
 
     const handleReferenceFile = async (file: File | null) => {
         if (!file) {
             setReferenceFileName('')
-            setReferenceText('')
+            setReferenceTextWithVersion('')
             return
         }
 
         const text = await file.text()
-        setReferenceText(text)
+        setReferenceTextWithVersion(text)
         setReferenceFileName(file.name)
     }
 
@@ -223,6 +239,7 @@ export default function ComparePage() {
                 modelVersion: modelVersion || undefined,
                 fileName: file.name,
                 text: transcription,
+                textVersion: entry.textVersion + 1,
                 audioDuration,
                 metrics: {
                     wer,
@@ -230,6 +247,8 @@ export default function ComparePage() {
                     rtTime,
                     rtf: getRtf(rtTime, audioDuration),
                 },
+                metricsVersion: referenceVersionRef.current,
+                metricsTextVersion: entry.textVersion + 1,
                 status: 'success',
             }))
         } catch (error) {
@@ -255,6 +274,7 @@ export default function ComparePage() {
         updateEntry(entryId, (entry) => ({
             ...entry,
             text,
+            textVersion: entry.textVersion + 1,
             fileName: file.name,
         }))
     }
@@ -287,6 +307,8 @@ export default function ComparePage() {
                     wer: metrics.wer,
                     cer: metrics.cer,
                 },
+                metricsVersion: referenceVersionRef.current,
+                metricsTextVersion: current.textVersion,
                 status: 'success',
             }))
         } catch (error) {
@@ -296,6 +318,24 @@ export default function ComparePage() {
                 status: 'error',
             }))
         }
+    }
+
+    const handleRefreshAllMetrics = async () => {
+        if (!referenceText.trim()) {
+            setStatusMessage('Reference text is required.')
+            return
+        }
+
+        const targets = entries.filter((entry) => entry.text.trim().length > 0)
+        if (targets.length === 0) {
+            setStatusMessage('Add hypothesis text first.')
+            return
+        }
+
+        setStatusMessage('')
+        await Promise.all(
+            targets.map((entry) => handleComputeMetricsForEntry(entry.id))
+        )
     }
 
     const handleReloadHistory = () => {
@@ -320,7 +360,7 @@ export default function ComparePage() {
         setSelectedRunId('')
         setDeleteConfirmRunId('')
         setStatusMessage('History entry deleted.')
-        setReferenceText('')
+        setReferenceTextWithVersion('')
         setReferenceFileName('')
         setSaveName('')
         setEntries(defaultModelId ? [createEntry(defaultModelId)] : [])
@@ -448,7 +488,9 @@ export default function ComparePage() {
             return
         }
 
-        setReferenceText(run.referenceText)
+        const nextReferenceVersion = setReferenceTextWithVersion(
+            run.referenceText
+        )
         setSaveName(run.name?.trim() || '')
         setReferenceFileName('')
         setEntries(
@@ -459,6 +501,7 @@ export default function ComparePage() {
                       modelVersion: result.modelVersion,
                       fileName: '',
                       text: result.transcription,
+                      textVersion: 0,
                       audioDuration: result.audioDuration ?? null,
                       metrics: {
                           wer: result.wer,
@@ -466,6 +509,8 @@ export default function ComparePage() {
                           rtTime: result.rtTime,
                           rtf: result.rtf ?? null,
                       },
+                      metricsVersion: nextReferenceVersion,
+                      metricsTextVersion: 0,
                       status: 'success',
                   }))
                 : defaultModelId
@@ -505,6 +550,29 @@ export default function ComparePage() {
             entry.audioDuration !== null
         )
     })
+
+    const canRefreshAllMetrics =
+        referenceText.trim().length > 0 &&
+        entries.some((entry) => entry.text.trim().length > 0)
+
+    const hasStaleMetrics = entries.some((entry) => {
+        const hasMetrics =
+            entry.metrics.wer !== null ||
+            entry.metrics.cer !== null ||
+            entry.metrics.rtTime !== null ||
+            entry.metrics.rtf !== null
+
+        return (
+            hasMetrics &&
+            (entry.metricsVersion < referenceVersion ||
+                entry.metricsTextVersion < entry.textVersion)
+        )
+    })
+
+    const isHistoryStatus =
+        statusMessage.startsWith('History entry') ||
+        statusMessage.startsWith('Select a history entry') ||
+        statusMessage.startsWith('Click delete again')
 
     return (
         <div className="space-y-6">
@@ -573,7 +641,7 @@ export default function ComparePage() {
                                     <input
                                         id="results-save-name"
                                         type="text"
-                                        className={`flex-1 min-w-[220px] rounded-md px-3 py-2 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
+                                        className={`flex-1 min-w-55 rounded-md px-3 py-2 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                                         value={saveName}
                                         onChange={(event) =>
                                             setSaveName(event.target.value)
@@ -609,6 +677,11 @@ export default function ComparePage() {
                                 remove this history entry.
                             </p>
                         ) : null}
+                        {isHistoryStatus ? (
+                            <p className="mt-2 text-sm text-red-600">
+                                {statusMessage}
+                            </p>
+                        ) : null}
                     </div>
 
                     <div className="space-y-3">
@@ -623,28 +696,46 @@ export default function ComparePage() {
                             className={`min-h-32 w-full rounded-md p-3 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                             value={referenceText}
                             onChange={(event) =>
-                                setReferenceText(event.target.value)
+                                setReferenceTextWithVersion(event.target.value)
                             }
                             placeholder="Paste reference text here"
                         />
 
-                        <div className="mt-3 flex flex-wrap items-center gap-3">
-                            <button
-                                className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
-                                onClick={() => {
-                                    void normalizeAndSetReferenceText(
-                                        referenceText
-                                    )
-                                }}
-                                disabled={referenceText.trim().length === 0}
-                                type="button"
-                            >
-                                Tokenize reference text
-                            </button>
-                            <p className={`text-xs ${styles.textMuted}`}>
-                                Replace punctuation and whitespace with the
-                                normalized form on demand.
-                            </p>
+                        <div className="mt-3 space-y-2">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                    className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
+                                    onClick={() => {
+                                        void normalizeAndSetReferenceText(
+                                            referenceText
+                                        )
+                                    }}
+                                    disabled={referenceText.trim().length === 0}
+                                    type="button"
+                                >
+                                    Tokenize reference text
+                                </button>
+                                <p className={`text-xs ${styles.textMuted}`}>
+                                    Replace punctuation and whitespace with the
+                                    normalized form on demand.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                    className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${
+                                        hasStaleMetrics
+                                            ? styles.buttonDangerSoft
+                                            : `${styles.surface} ${styles.border} ${styles.textPrimary}`
+                                    }`}
+                                    onClick={() =>
+                                        void handleRefreshAllMetrics()
+                                    }
+                                    disabled={!canRefreshAllMetrics}
+                                    type="button"
+                                >
+                                    Refresh all metrics
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -660,7 +751,7 @@ export default function ComparePage() {
                 </div>
             </section>
 
-            {statusMessage ? (
+            {statusMessage && !isHistoryStatus ? (
                 <p className="text-sm text-red-600">{statusMessage}</p>
             ) : null}
 
@@ -681,6 +772,15 @@ export default function ComparePage() {
                     const displayLabel = entry.modelVersion
                         ? `${modelLabel} (${entry.modelVersion})`
                         : modelLabel
+                    const hasEntryMetrics =
+                        entry.metrics.wer !== null ||
+                        entry.metrics.cer !== null ||
+                        entry.metrics.rtTime !== null ||
+                        entry.metrics.rtf !== null
+                    const isEntryMetricsStale =
+                        hasEntryMetrics &&
+                        (entry.metricsVersion < referenceVersion ||
+                            entry.metricsTextVersion < entry.textVersion)
 
                     return (
                         <TranscriptionCard
@@ -770,6 +870,7 @@ export default function ComparePage() {
                                     updateEntry(entry.id, (current) => ({
                                         ...current,
                                         text: event.target.value,
+                                        textVersion: current.textVersion + 1,
                                     }))
                                 }
                                 placeholder="Paste hypothesis text here"
@@ -790,7 +891,11 @@ export default function ComparePage() {
                                 }
                                 footer={
                                     <button
-                                        className={`rounded-md px-3 py-1.5 text-xs font-medium ${styles.buttonAccentSoft}`}
+                                        className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                                            isEntryMetricsStale
+                                                ? styles.buttonDangerSoft
+                                                : styles.buttonAccentSoft
+                                        }`}
                                         onClick={() =>
                                             void handleComputeMetricsForEntry(
                                                 entry.id
@@ -804,8 +909,8 @@ export default function ComparePage() {
                                         type="button"
                                     >
                                         {entry.status === 'loading'
-                                            ? 'Recalculating...'
-                                            : 'Compute metrics'}
+                                            ? 'Refreshing...'
+                                            : 'Refresh'}
                                     </button>
                                 }
                             />

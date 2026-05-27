@@ -13,7 +13,10 @@ export type CompareEntry = {
     modelVersion?: string
     fileName: string
     text: string
+    textVersion: number
     metrics: EntryMetrics
+    metricsVersion: number
+    metricsTextVersion: number
     audioDuration?: number | null
     status: EntryStatus
 }

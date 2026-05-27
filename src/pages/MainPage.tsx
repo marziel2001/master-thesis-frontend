@@ -106,6 +106,8 @@ function MainPage() {
         useState(false)
     const [statusMessage, setStatusMessage] = useState('')
     const [historyMessage, setHistoryMessage] = useState('')
+    const referenceVersionRef = useRef(0)
+    const [referenceVersion, setReferenceVersion] = useState(0)
     const [results, setResults] = useState<Record<string, string>>({})
     const [metrics, setMetrics] = useState<Record<string, ModelMetrics>>({})
     const [loadingState, setLoadingState] = useState<Record<string, boolean>>(
@@ -129,6 +131,9 @@ function MainPage() {
     const [modelVariants, setModelVariants] = useState<Record<string, string>>(
         {}
     )
+    const [metricsVersionByModel, setMetricsVersionByModel] = useState<
+        Record<string, number>
+    >({})
 
     const resolveAudioDuration = async (selectedFile: File | null) => {
         audioDurationRequestId.current += 1
@@ -157,15 +162,26 @@ function MainPage() {
         return `${baseName} - ${stamp}`
     }
 
+    const bumpReferenceVersion = () => {
+        referenceVersionRef.current += 1
+        setReferenceVersion(referenceVersionRef.current)
+        return referenceVersionRef.current
+    }
+
+    const setReferenceTextWithVersion = (text: string) => {
+        setReferenceText(text)
+        return bumpReferenceVersion()
+    }
+
     const handleReferenceFile = async (selectedFile: File | null) => {
         if (!selectedFile) {
             setReferenceFileName('')
-            setReferenceText('')
+            setReferenceTextWithVersion('')
             return
         }
 
         const text = await selectedFile.text()
-        setReferenceText(text)
+        setReferenceTextWithVersion(text)
         setReferenceFileName(selectedFile.name)
     }
 
@@ -178,7 +194,7 @@ function MainPage() {
         setReferenceTextNormalizing(true)
         try {
             const normalizedText = await normalizeText({ text: referenceText })
-            setReferenceText(normalizedText)
+            setReferenceTextWithVersion(normalizedText)
         } finally {
             setReferenceTextNormalizing(false)
         }
@@ -198,6 +214,9 @@ function MainPage() {
         setModelVersions(buildModelRecord(models, () => ''))
         setModelVariants(
             buildModelRecord(models, (modelId) => getDefaultVariant(modelId))
+        )
+        setMetricsVersionByModel(
+            buildModelRecord(models, () => referenceVersionRef.current)
         )
     }, [models, getDefaultVariant])
 
@@ -239,12 +258,15 @@ function MainPage() {
         const normalizedReferenceText = referenceText.trim()
             ? await normalizeText({ text: referenceText })
             : ''
+        let referenceVersionForMetrics = referenceVersionRef.current
 
         if (
             normalizedReferenceText &&
             normalizedReferenceText !== referenceText
         ) {
-            setReferenceText(normalizedReferenceText)
+            referenceVersionForMetrics = setReferenceTextWithVersion(
+                normalizedReferenceText
+            )
         }
 
         setStatusMessage('')
@@ -286,6 +308,10 @@ function MainPage() {
             setModelMetrics(model, { wer, cer, rtTime, rtf })
             setModelStatus(model, 'success')
             setModelVersion(model, modelVersion || selectedVariant)
+            setMetricsVersionByModel((previous) => ({
+                ...previous,
+                [model]: referenceVersionForMetrics,
+            }))
 
             return {
                 model,
@@ -323,8 +349,11 @@ function MainPage() {
         const normalizedReferenceText = await normalizeText({
             text: referenceText,
         })
+        let referenceVersionForMetrics = referenceVersionRef.current
         if (normalizedReferenceText !== referenceText) {
-            setReferenceText(normalizedReferenceText)
+            referenceVersionForMetrics = setReferenceTextWithVersion(
+                normalizedReferenceText
+            )
         }
 
         setStatusMessage('')
@@ -348,12 +377,38 @@ function MainPage() {
                 rtTime: currentMetrics.rtTime ?? null,
                 rtf,
             })
+            setMetricsVersionByModel((previous) => ({
+                ...previous,
+                [model]: referenceVersionForMetrics,
+            }))
         } catch (error) {
             console.error(error)
             setStatusMessage('Failed to recalculate metrics. Please try again.')
         } finally {
             setModelMetricsLoading(model, false)
         }
+    }
+
+    const handleRefreshAllMetrics = async () => {
+        if (!referenceText.trim()) {
+            setStatusMessage('Reference text is required.')
+            return
+        }
+
+        const targets = models.filter(
+            (model) => results[model.id]?.trim().length > 0
+        )
+        if (targets.length === 0) {
+            setStatusMessage('Run at least one model first.')
+            return
+        }
+
+        setStatusMessage('')
+        setHistoryMessage('')
+
+        await Promise.all(
+            targets.map((model) => recalculateMetricsForModel(model.id))
+        )
     }
 
     const updateModelEnabled = (model: string, enabled: boolean) => {
@@ -408,6 +463,24 @@ function MainPage() {
             ])
         )
     }, [enabledModels, metrics, models])
+
+    const canRefreshAllMetrics =
+        referenceText.trim().length > 0 &&
+        models.some((model) => results[model.id]?.trim().length > 0)
+
+    const hasStaleMetrics = models.some((model) => {
+        const metricsEntry = metrics[model.id] ?? EMPTY_METRICS
+        const hasMetrics =
+            metricsEntry.wer !== null ||
+            metricsEntry.cer !== null ||
+            metricsEntry.rtTime !== null ||
+            metricsEntry.rtf !== null
+
+        return (
+            hasMetrics &&
+            (metricsVersionByModel[model.id] ?? 0) < referenceVersion
+        )
+    })
 
     const hasAnyResult = models.some((model) => {
         const entry = results[model.id] ?? ''
@@ -591,30 +664,48 @@ function MainPage() {
                             className={`mt-3 min-h-28 w-full rounded-md p-3 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                             value={referenceText}
                             onChange={(event) =>
-                                setReferenceText(event.target.value)
+                                setReferenceTextWithVersion(event.target.value)
                             }
                             placeholder="Paste reference text here"
                         />
-                        <div className="mt-3 flex flex-wrap items-center gap-3">
-                            <button
-                                className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
-                                onClick={() => {
-                                    void normalizeCurrentReferenceText()
-                                }}
-                                disabled={
-                                    referenceTextNormalizing ||
-                                    referenceText.trim().length === 0
-                                }
-                                type="button"
-                            >
-                                {referenceTextNormalizing
-                                    ? 'Normalizing...'
-                                    : 'Tokenize reference text'}
-                            </button>
-                            <p className={`text-xs ${styles.textMuted}`}>
-                                Replaces punctuation and extra whitespace with
-                                the normalized tokenized form.
-                            </p>
+                        <div className="mt-3 space-y-2">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                    className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
+                                    onClick={() => {
+                                        void normalizeCurrentReferenceText()
+                                    }}
+                                    disabled={
+                                        referenceTextNormalizing ||
+                                        referenceText.trim().length === 0
+                                    }
+                                    type="button"
+                                >
+                                    {referenceTextNormalizing
+                                        ? 'Normalizing...'
+                                        : 'Tokenize reference text'}
+                                </button>
+                                <p className={`text-xs ${styles.textMuted}`}>
+                                    Replaces punctuation and extra whitespace
+                                    with the normalized tokenized form.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                    className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${
+                                        hasStaleMetrics
+                                            ? styles.buttonDangerSoft
+                                            : `${styles.surface} ${styles.border} ${styles.textPrimary}`
+                                    }`}
+                                    onClick={() =>
+                                        void handleRefreshAllMetrics()
+                                    }
+                                    disabled={!canRefreshAllMetrics}
+                                    type="button"
+                                >
+                                    Refresh all metrics
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -719,6 +810,15 @@ function MainPage() {
                         const transcriptionText = results[modelId] ?? ''
                         const isChecked = enabledModels[modelId] ?? false
                         const isExpanded = expandedModelIds.has(modelId)
+                        const hasMetrics =
+                            metricsEntry.wer !== null ||
+                            metricsEntry.cer !== null ||
+                            metricsEntry.rtTime !== null ||
+                            metricsEntry.rtf !== null
+                        const isMetricsStale =
+                            hasMetrics &&
+                            (metricsVersionByModel[modelId] ?? 0) <
+                                referenceVersion
                         const diffContainerClassName = isChecked
                             ? 'mt-4 max-h-[9999px] opacity-100'
                             : 'mt-0 max-h-0 opacity-0'
@@ -865,7 +965,11 @@ function MainPage() {
                                         }
                                         footer={
                                             <button
-                                                className={`rounded-md px-3 py-1.5 text-xs font-medium ${styles.buttonAccentSoft}`}
+                                                className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                                                    isMetricsStale
+                                                        ? styles.buttonDangerSoft
+                                                        : styles.buttonAccentSoft
+                                                }`}
                                                 onClick={() =>
                                                     void recalculateMetricsForModel(
                                                         modelId
@@ -882,8 +986,8 @@ function MainPage() {
                                                 }
                                             >
                                                 {metricsLoadingState[modelId]
-                                                    ? 'Recalculating...'
-                                                    : 'Recompute metrics'}
+                                                    ? 'Refreshing...'
+                                                    : 'Refresh'}
                                             </button>
                                         }
                                     />
