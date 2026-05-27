@@ -575,18 +575,10 @@ function MainPage() {
                         }}
                     />
                     <div>
-                        <label
-                            htmlFor="reference-text"
-                            className={`block text-sm font-semibold ${styles.textPrimary}`}
-                        >
-                            Reference text
-                        </label>
-                        <p className={`mt-1 text-xs ${styles.textMuted}`}>
-                            Text used for WER, CER and colored diff.
-                        </p>
+
                         <div className="mt-3">
                             <FilePicker
-                                label="Reference file"
+                                label="Reference text file"
                                 accept=".txt"
                                 fileName={referenceFileName}
                                 onFileChange={(selectedFile) => {
