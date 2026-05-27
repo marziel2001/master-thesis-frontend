@@ -41,6 +41,49 @@ function buildFileName(title: string) {
     return `${normalized || 'chart'}.png`
 }
 
+function wrapLabel(label: string, maxCharsPerLine: number): string[] {
+    const words = label.split(/\s+/).filter(Boolean)
+
+    if (words.length === 0) {
+        return [label]
+    }
+
+    const lines: string[] = []
+    let currentLine = ''
+
+    for (const word of words) {
+        const nextLine = currentLine ? `${currentLine} ${word}` : word
+
+        if (nextLine.length <= maxCharsPerLine) {
+            currentLine = nextLine
+            continue
+        }
+
+        if (currentLine) {
+            lines.push(currentLine)
+        }
+
+        if (word.length > maxCharsPerLine) {
+            const chunks = word.match(
+                new RegExp(`.{1,${maxCharsPerLine}}`, 'g')
+            )
+            if (chunks) {
+                lines.push(...chunks.slice(0, -1))
+                currentLine = chunks[chunks.length - 1]
+                continue
+            }
+        }
+
+        currentLine = word
+    }
+
+    if (currentLine) {
+        lines.push(currentLine)
+    }
+
+    return lines.length > 0 ? lines : [label]
+}
+
 function getBarPercent(
     value: number,
     useRelativeScale: boolean,
@@ -97,8 +140,9 @@ function MetricChart({
                         backgroundColor: 'rgba(37, 99, 235, 0.82)',
                         borderColor: 'rgba(37, 99, 235, 1)',
                         borderWidth: 1,
-                        borderRadius: 10,
+                        borderRadius: 0,
                         borderSkipped: false,
+                        maxBarThickness: 20,
                     },
                 ],
             },
@@ -140,6 +184,13 @@ function MetricChart({
                         },
                         ticks: {
                             color: '#334155',
+                            callback: function (value) {
+                                const rawLabel = this.getLabelForValue(
+                                    Number(value)
+                                )
+
+                                return wrapLabel(rawLabel, 18)
+                            },
                         },
                     },
                 },
