@@ -12,6 +12,17 @@ import styles from '../styles/theme.module.css'
 import type { CompareEntry, EntryMetrics } from './ComparePage.types'
 import type { StoredRun } from '../utils/resultsHistory.types'
 
+type ImportedResultJson = {
+    modelName?: unknown
+    modelVersion?: unknown
+    computeTime?: unknown
+    audioDuration?: unknown
+    filename?: unknown
+    transcription?: unknown
+    wer?: unknown
+    cer?: unknown
+}
+
 const EMPTY_METRICS: EntryMetrics = {
     wer: null,
     cer: null,
@@ -110,6 +121,85 @@ export default function ComparePage() {
         setReferenceFileName(file.name)
     }
 
+    const getRtf = (
+        rtTime: number | null,
+        audioDuration: number | null
+    ): number | null => {
+        if (
+            typeof rtTime !== 'number' ||
+            typeof audioDuration !== 'number' ||
+            !Number.isFinite(rtTime) ||
+            !Number.isFinite(audioDuration) ||
+            audioDuration <= 0
+        ) {
+            return null
+        }
+
+        return rtTime / audioDuration
+    }
+
+    const handleLoadResultJson = async (entryId: string, file: File | null) => {
+        if (!file) {
+            updateEntry(entryId, (entry) => ({
+                ...entry,
+                fileName: '',
+            }))
+            return
+        }
+
+        try {
+            const parsed = JSON.parse(
+                (await file.text()) || '{}'
+            ) as ImportedResultJson
+            const transcription =
+                typeof parsed.transcription === 'string'
+                    ? parsed.transcription
+                    : ''
+            const wer = typeof parsed.wer === 'number' ? parsed.wer : null
+            const cer = typeof parsed.cer === 'number' ? parsed.cer : null
+            const rtTime =
+                typeof parsed.computeTime === 'number'
+                    ? parsed.computeTime
+                    : null
+            const audioDuration =
+                typeof parsed.audioDuration === 'number'
+                    ? parsed.audioDuration
+                    : null
+            const modelName =
+                typeof parsed.modelName === 'string' ? parsed.modelName : ''
+            const modelVersion =
+                typeof parsed.modelVersion === 'string'
+                    ? parsed.modelVersion
+                    : ''
+            const resolvedModelId =
+                modelName && models.some((model) => model.id === modelName)
+                    ? modelName
+                    : null
+
+            updateEntry(entryId, (entry) => ({
+                ...entry,
+                modelId: resolvedModelId ?? entry.modelId,
+                modelVersion: modelVersion || undefined,
+                fileName: file.name,
+                text: transcription,
+                metrics: {
+                    wer,
+                    cer,
+                    rtTime,
+                    rtf: getRtf(rtTime, audioDuration),
+                },
+                status: 'success',
+            }))
+        } catch (error) {
+            console.error(error)
+            setStatusMessage('Invalid JSON result file.')
+            updateEntry(entryId, (entry) => ({
+                ...entry,
+                status: 'error',
+            }))
+        }
+    }
+
     const handleEntryFile = async (entryId: string, file: File | null) => {
         if (!file) {
             updateEntry(entryId, (entry) => ({
@@ -127,57 +217,43 @@ export default function ComparePage() {
         }))
     }
 
-    const handleComputeMetrics = async () => {
+    const handleComputeMetricsForEntry = async (entryId: string) => {
         if (!referenceText.trim()) {
             setStatusMessage('Reference text is required.')
             return
         }
 
-        const normalizedReferenceText = await normalizeText({
-            text: referenceText,
-        })
-
-        const targets = entries.filter((entry) => entry.text.trim().length > 0)
-
-        if (targets.length === 0) {
-            setStatusMessage('Add at least one hypothesis text.')
+        const target = entries.find((entry) => entry.id === entryId)
+        if (!target || target.text.trim().length === 0) {
+            setStatusMessage('Add hypothesis text first.')
             return
         }
 
         setStatusMessage('')
+        updateEntry(entryId, (entry) => ({ ...entry, status: 'loading' }))
 
-        const targetIds = new Set(targets.map((entry) => entry.id))
-
-        setEntries((previous) =>
-            previous.map((entry) =>
-                targetIds.has(entry.id)
-                    ? { ...entry, status: 'loading' }
-                    : entry
-            )
-        )
-
-        await Promise.all(
-            targets.map(async (entry) => {
-                try {
-                    const metrics = await getMetrics({
-                        referenceText: normalizedReferenceText,
-                        hypothesisText: entry.text,
-                    })
-
-                    updateEntry(entry.id, (current) => ({
-                        ...current,
-                        metrics: { ...metrics, rtTime: null, rtf: null },
-                        status: 'success',
-                    }))
-                } catch (error) {
-                    console.error(error)
-                    updateEntry(entry.id, (current) => ({
-                        ...current,
-                        status: 'error',
-                    }))
-                }
+        try {
+            const metrics = await getMetrics({
+                referenceText,
+                hypothesisText: target.text,
             })
-        )
+
+            updateEntry(entryId, (current) => ({
+                ...current,
+                metrics: {
+                    ...current.metrics,
+                    wer: metrics.wer,
+                    cer: metrics.cer,
+                },
+                status: 'success',
+            }))
+        } catch (error) {
+            console.error(error)
+            updateEntry(entryId, (entry) => ({
+                ...entry,
+                status: 'error',
+            }))
+        }
     }
 
     const handleReloadHistory = () => {
@@ -363,12 +439,6 @@ export default function ComparePage() {
 
                     <div className="flex flex-wrap items-center gap-3">
                         <button
-                            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white"
-                            onClick={handleComputeMetrics}
-                        >
-                            Compute metrics
-                        </button>
-                        <button
                             className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none ${styles.surface} ${styles.border} ${styles.textPrimary}`}
                             onClick={handleAddEntry}
                             disabled={!defaultModelId || modelCatalogLoading}
@@ -447,12 +517,29 @@ export default function ComparePage() {
                                 </>
                             }
                             headerActions={
-                                <button
-                                    className="rounded px-2 py-1 text-xs font-medium text-red-500 transition hover:bg-red-50 active:bg-red-100 active:scale-95"
-                                    onClick={() => handleRemoveEntry(entry.id)}
-                                >
-                                    Remove
-                                </button>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <FilePicker
+                                        label="Load from json"
+                                        accept=".json"
+                                        fileName={entry.fileName}
+                                        onFileChange={(file) =>
+                                            void handleLoadResultJson(
+                                                entry.id,
+                                                file
+                                            )
+                                        }
+                                        buttonLabel="Load from json"
+                                        compact={true}
+                                    />
+                                    <button
+                                        className="rounded px-2 py-1 text-xs font-medium text-red-500 transition hover:bg-red-50 active:bg-red-100 active:scale-95"
+                                        onClick={() =>
+                                            handleRemoveEntry(entry.id)
+                                        }
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
                             }
                         >
                             <FilePicker
@@ -484,6 +571,26 @@ export default function ComparePage() {
                                     rtTime: entry.metrics.rtTime,
                                 }}
                                 showTime={true}
+                                footer={
+                                    <button
+                                        className={`rounded-md px-3 py-1.5 text-xs font-medium ${styles.buttonAccentSoft}`}
+                                        onClick={() =>
+                                            void handleComputeMetricsForEntry(
+                                                entry.id
+                                            )
+                                        }
+                                        disabled={
+                                            referenceText.trim().length === 0 ||
+                                            entry.text.trim().length === 0 ||
+                                            entry.status === 'loading'
+                                        }
+                                        type="button"
+                                    >
+                                        {entry.status === 'loading'
+                                            ? 'Recalculating...'
+                                            : 'Compute metrics'}
+                                    </button>
+                                }
                             />
 
                             {entry.status === 'error' ? (
