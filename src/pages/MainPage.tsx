@@ -393,21 +393,21 @@ function MainPage() {
 
     const allModelsEnabled =
         models.length > 0 && models.every((model) => enabledModels[model.id])
-    const chartMetrics = useMemo(
-        () =>
-            Object.fromEntries(
-                models.map((model) => [
-                    model.id,
-                    {
-                        wer: metrics[model.id]?.wer ?? null,
-                        cer: metrics[model.id]?.cer ?? null,
-                        rtTime: metrics[model.id]?.rtTime ?? null,
-                        rtf: metrics[model.id]?.rtf ?? null,
-                    },
-                ])
-            ),
-        [metrics, models]
-    )
+    const chartMetrics = useMemo(() => {
+        const enabledEntries = models.filter((model) => enabledModels[model.id])
+
+        return Object.fromEntries(
+            enabledEntries.map((model) => [
+                model.id,
+                {
+                    wer: metrics[model.id]?.wer ?? null,
+                    cer: metrics[model.id]?.cer ?? null,
+                    rtTime: metrics[model.id]?.rtTime ?? null,
+                    rtf: metrics[model.id]?.rtf ?? null,
+                },
+            ])
+        )
+    }, [enabledModels, metrics, models])
 
     const hasAnyResult = models.some((model) => {
         const entry = results[model.id] ?? ''
@@ -575,7 +575,6 @@ function MainPage() {
                         }}
                     />
                     <div>
-
                         <div className="mt-3">
                             <FilePicker
                                 label="Reference text file"

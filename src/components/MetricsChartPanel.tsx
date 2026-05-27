@@ -183,6 +183,7 @@ function MetricChart({
                             display: false,
                         },
                         ticks: {
+                            autoSkip: false,
                             color: '#334155',
                             callback: function (value) {
                                 const rawLabel = this.getLabelForValue(
