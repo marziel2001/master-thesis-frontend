@@ -35,6 +35,40 @@ const EMPTY_METRICS: EntryMetrics = {
     rtf: null,
 }
 
+type CsvRow = {
+    runName: string
+    model: string
+    modelVersion: string
+    wer: number | null
+    cer: number | null
+    rtTime: number | null
+    rtf: number | null
+    audioDuration: number | null
+}
+
+const CSV_HEADERS: Array<keyof CsvRow> = [
+    'runName',
+    'model',
+    'modelVersion',
+    'wer',
+    'cer',
+    'rtTime',
+    'rtf',
+    'audioDuration',
+]
+
+const CSV_SEPARATOR = ';'
+
+const toCsvValue = (value: CsvRow[keyof CsvRow]) => {
+    if (value === null || value === undefined) {
+        return ''
+    }
+
+    const rawValue = String(value)
+    const escaped = rawValue.replace(/"/g, '""')
+    return /[";\n\r]/.test(rawValue) ? `"${escaped}"` : escaped
+}
+
 export default function ComparePage() {
     const {
         models,
@@ -346,6 +380,65 @@ export default function ComparePage() {
         setStatusMessage('History entry saved.')
     }
 
+    const handleExportCsv = () => {
+        const resolvedRunName = saveName.trim() || 'Unsaved run'
+        const rows: CsvRow[] = entries
+            .map((entry) => ({
+                runName: resolvedRunName,
+                model: entry.modelId,
+                modelVersion: entry.modelVersion ?? '',
+                wer: entry.metrics.wer,
+                cer: entry.metrics.cer,
+                rtTime: entry.metrics.rtTime,
+                rtf: entry.metrics.rtf,
+                audioDuration: entry.audioDuration ?? null,
+            }))
+            .filter(
+                (entry) =>
+                    entry.wer !== null ||
+                    entry.cer !== null ||
+                    entry.rtTime !== null ||
+                    entry.rtf !== null ||
+                    entry.audioDuration !== null
+            )
+
+        if (rows.length === 0) {
+            setStatusMessage('Nothing to export yet.')
+            return
+        }
+
+        const csvLines = [
+            CSV_HEADERS.join(CSV_SEPARATOR),
+            ...rows.map((row) =>
+                CSV_HEADERS.map((header) => toCsvValue(row[header])).join(
+                    CSV_SEPARATOR
+                )
+            ),
+        ]
+
+        const csvContent = `${csvLines.join('\n')}\n`
+        const baseName = (saveName.trim() || 'results-reader')
+            .replace(/[^a-z0-9-_]+/gi, '_')
+            .replace(/^_+|_+$/g, '')
+        const timestamp = new Date()
+            .toISOString()
+            .slice(0, 19)
+            .replace(/[:T]/g, '-')
+        const fileName = `${baseName || 'results-reader'}-${timestamp}.csv`
+        const blob = new Blob([csvContent], {
+            type: 'text/csv;charset=utf-8;',
+        })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+
+        link.href = url
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        URL.revokeObjectURL(url)
+    }
+
     const handleSelectRun = (event: ChangeEvent<HTMLSelectElement>) => {
         const runId = event.target.value
         setSelectedRunId(runId)
@@ -402,6 +495,16 @@ export default function ComparePage() {
             })
         )
     }, [entries, getModelLabel])
+
+    const canExport = entries.some((entry) => {
+        return (
+            entry.metrics.wer !== null ||
+            entry.metrics.cer !== null ||
+            entry.metrics.rtTime !== null ||
+            entry.metrics.rtf !== null ||
+            entry.audioDuration !== null
+        )
+    })
 
     return (
         <div className="space-y-6">
@@ -483,6 +586,14 @@ export default function ComparePage() {
                                         type="button"
                                     >
                                         Save run
+                                    </button>
+                                    <button
+                                        className={`rounded-md px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
+                                        onClick={handleExportCsv}
+                                        type="button"
+                                        disabled={!canExport}
+                                    >
+                                        Export CSV
                                     </button>
                                 </div>
                                 <p className={`text-xs ${styles.textMuted}`}>
