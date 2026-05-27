@@ -8,6 +8,7 @@ import TranscriptionCard from '../components/TranscriptionCard'
 import styles from '../styles/theme.module.css'
 import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
+import { normalizeText } from '../requests/normalizeText'
 import { transcribeAudio } from '../requests/transcription'
 import { saveRunSafe } from '../utils/resultsHistory'
 import { type ModelMetrics, type ModelStatus } from './MainPage.types'
@@ -101,6 +102,8 @@ function MainPage() {
     const audioDurationRequestId = useRef(0)
     const [referenceText, setReferenceText] = useState('')
     const [referenceFileName, setReferenceFileName] = useState('')
+    const [referenceTextNormalizing, setReferenceTextNormalizing] =
+        useState(false)
     const [statusMessage, setStatusMessage] = useState('')
     const [historyMessage, setHistoryMessage] = useState('')
     const [results, setResults] = useState<Record<string, string>>({})
@@ -157,12 +160,28 @@ function MainPage() {
     const handleReferenceFile = async (selectedFile: File | null) => {
         if (!selectedFile) {
             setReferenceFileName('')
+            setReferenceText('')
             return
         }
 
         const text = await selectedFile.text()
         setReferenceText(text)
         setReferenceFileName(selectedFile.name)
+    }
+
+    const normalizeCurrentReferenceText = async () => {
+        const text = referenceText.trim()
+        if (!text) {
+            return
+        }
+
+        setReferenceTextNormalizing(true)
+        try {
+            const normalizedText = await normalizeText({ text: referenceText })
+            setReferenceText(normalizedText)
+        } finally {
+            setReferenceTextNormalizing(false)
+        }
     }
 
     useEffect(() => {
@@ -217,6 +236,17 @@ function MainPage() {
             return null
         }
 
+        const normalizedReferenceText = referenceText.trim()
+            ? await normalizeText({ text: referenceText })
+            : ''
+
+        if (
+            normalizedReferenceText &&
+            normalizedReferenceText !== referenceText
+        ) {
+            setReferenceText(normalizedReferenceText)
+        }
+
         setStatusMessage('')
         setHistoryMessage('')
 
@@ -237,7 +267,7 @@ function MainPage() {
             } = await transcribeAudio(
                 model,
                 file,
-                referenceText,
+                normalizedReferenceText,
                 selectedVariant
             )
             let resolvedAudioDuration = responseAudioDuration ?? audioDuration
@@ -290,13 +320,20 @@ function MainPage() {
             return
         }
 
+        const normalizedReferenceText = await normalizeText({
+            text: referenceText,
+        })
+        if (normalizedReferenceText !== referenceText) {
+            setReferenceText(normalizedReferenceText)
+        }
+
         setStatusMessage('')
         setHistoryMessage('')
         setModelMetricsLoading(model, true)
 
         try {
             const { wer, cer } = await getMetrics({
-                referenceText: reference,
+                referenceText: normalizedReferenceText,
                 hypothesisText: transcription,
                 normalize: true,
             })
@@ -567,6 +604,27 @@ function MainPage() {
                             }
                             placeholder="Paste reference text here"
                         />
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                            <button
+                                className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
+                                onClick={() => {
+                                    void normalizeCurrentReferenceText()
+                                }}
+                                disabled={
+                                    referenceTextNormalizing ||
+                                    referenceText.trim().length === 0
+                                }
+                                type="button"
+                            >
+                                {referenceTextNormalizing
+                                    ? 'Normalizing...'
+                                    : 'Tokenize reference text'}
+                            </button>
+                            <p className={`text-xs ${styles.textMuted}`}>
+                                Replaces punctuation and extra whitespace with
+                                the normalized tokenized form.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </section>

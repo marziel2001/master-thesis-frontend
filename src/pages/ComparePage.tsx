@@ -6,6 +6,7 @@ import MetricsChartPanel from '../components/MetricsChartPanel'
 import TranscriptionCard from '../components/TranscriptionCard'
 import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
+import { normalizeText } from '../requests/normalizeText'
 import { deleteRun, formatRunLabel, loadHistory } from '../utils/resultsHistory'
 import styles from '../styles/theme.module.css'
 import type { CompareEntry, EntryMetrics } from './ComparePage.types'
@@ -91,9 +92,16 @@ export default function ComparePage() {
         )
     }
 
+    const normalizeAndSetReferenceText = async (text: string) => {
+        const normalized = await normalizeText({ text })
+        setReferenceText(normalized)
+        return normalized
+    }
+
     const handleReferenceFile = async (file: File | null) => {
         if (!file) {
             setReferenceFileName('')
+            setReferenceText('')
             return
         }
 
@@ -125,6 +133,10 @@ export default function ComparePage() {
             return
         }
 
+        const normalizedReferenceText = await normalizeText({
+            text: referenceText,
+        })
+
         const targets = entries.filter((entry) => entry.text.trim().length > 0)
 
         if (targets.length === 0) {
@@ -148,7 +160,7 @@ export default function ComparePage() {
             targets.map(async (entry) => {
                 try {
                     const metrics = await getMetrics({
-                        referenceText,
+                        referenceText: normalizedReferenceText,
                         hypothesisText: entry.text,
                     })
 
@@ -329,6 +341,24 @@ export default function ComparePage() {
                             }
                             placeholder="Paste reference text here"
                         />
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                            <button
+                                className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
+                                onClick={() => {
+                                    void normalizeAndSetReferenceText(
+                                        referenceText
+                                    )
+                                }}
+                                disabled={referenceText.trim().length === 0}
+                                type="button"
+                            >
+                                Tokenize reference text
+                            </button>
+                            <p className={`text-xs ${styles.textMuted}`}>
+                                Replace punctuation and whitespace with the
+                                normalized form on demand.
+                            </p>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
