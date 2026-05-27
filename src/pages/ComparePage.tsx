@@ -7,7 +7,12 @@ import TranscriptionCard from '../components/TranscriptionCard'
 import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
 import { normalizeText } from '../requests/normalizeText'
-import { deleteRun, formatRunLabel, loadHistory } from '../utils/resultsHistory'
+import {
+    deleteRun,
+    formatRunLabel,
+    loadHistory,
+    saveRunSafe,
+} from '../utils/resultsHistory'
 import styles from '../styles/theme.module.css'
 import type { CompareEntry, EntryMetrics } from './ComparePage.types'
 import type { StoredRun } from '../utils/resultsHistory.types'
@@ -43,6 +48,7 @@ export default function ComparePage() {
     const [history, setHistory] = useState<StoredRun[]>(() => loadHistory())
     const [selectedRunId, setSelectedRunId] = useState('')
     const [deleteConfirmRunId, setDeleteConfirmRunId] = useState('')
+    const [saveName, setSaveName] = useState('')
     const [statusMessage, setStatusMessage] = useState('')
 
     const defaultModelId = models[0]?.id ?? ''
@@ -54,6 +60,7 @@ export default function ComparePage() {
         fileName: '',
         text: '',
         metrics: EMPTY_METRICS,
+        audioDuration: null,
         status: 'idle',
     })
 
@@ -182,6 +189,7 @@ export default function ComparePage() {
                 modelVersion: modelVersion || undefined,
                 fileName: file.name,
                 text: transcription,
+                audioDuration,
                 metrics: {
                     wer,
                     cer,
@@ -280,7 +288,62 @@ export default function ComparePage() {
         setStatusMessage('History entry deleted.')
         setReferenceText('')
         setReferenceFileName('')
+        setSaveName('')
         setEntries(defaultModelId ? [createEntry(defaultModelId)] : [])
+    }
+
+    const handleSaveCurrentRun = () => {
+        if (!referenceText.trim()) {
+            setStatusMessage('Reference text is required.')
+            return
+        }
+
+        const runResults = entries
+            .map((entry) => ({
+                model: entry.modelId,
+                modelVersion: entry.modelVersion || undefined,
+                transcription: entry.text,
+                wer: entry.metrics.wer,
+                cer: entry.metrics.cer,
+                rtTime: entry.metrics.rtTime,
+                rtf: entry.metrics.rtf ?? null,
+                audioDuration: entry.audioDuration ?? null,
+            }))
+            .filter(
+                (entry) =>
+                    entry.transcription.trim().length > 0 ||
+                    entry.wer !== null ||
+                    entry.cer !== null ||
+                    entry.rtTime !== null
+            )
+
+        if (runResults.length === 0) {
+            setStatusMessage('Add at least one result before saving.')
+            return
+        }
+
+        const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+        const saveResult = saveRunSafe({
+            id: runId,
+            createdAt: new Date().toISOString(),
+            name: saveName.trim() || undefined,
+            referenceText,
+            results: runResults,
+        })
+
+        if (!saveResult.ok) {
+            setStatusMessage(
+                `Failed to save history. ${saveResult.error ?? ''}`.trim()
+            )
+            return
+        }
+
+        setHistory(loadHistory())
+        setSelectedRunId('')
+        setDeleteConfirmRunId('')
+        setSaveName('')
+        setStatusMessage('History entry saved.')
     }
 
     const handleSelectRun = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -293,6 +356,7 @@ export default function ComparePage() {
         }
 
         setReferenceText(run.referenceText)
+        setSaveName(run.name?.trim() || '')
         setReferenceFileName('')
         setEntries(
             run.results.length > 0
@@ -302,6 +366,7 @@ export default function ComparePage() {
                       modelVersion: result.modelVersion,
                       fileName: '',
                       text: result.transcription,
+                      audioDuration: result.audioDuration ?? null,
                       metrics: {
                           wer: result.wer,
                           cer: result.cer,
@@ -356,41 +421,75 @@ export default function ComparePage() {
                     <div
                         className={`rounded-xl p-4 shadow-sm ${styles.surfaceMuted} ${styles.border}`}
                     >
-                        <div className="flex flex-wrap items-center gap-3">
-                            <select
-                                className={`w-full max-w-sm rounded-md p-2 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
-                                value={selectedRunId}
-                                onChange={handleSelectRun}
-                            >
-                                <option value="">Load from history</option>
-                                {history.map((run) => (
-                                    <option key={run.id} value={run.id}>
-                                        {formatRunLabel(run)}
-                                    </option>
-                                ))}
-                            </select>
-                            <button
-                                className={`rounded-md px-4 py-2 text-sm font-medium ${styles.surface} ${styles.border} ${styles.textPrimary}`}
-                                onClick={handleReloadHistory}
-                            >
-                                Reload history
-                            </button>
-                            <button
-                                className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-                                    selectedRunId
-                                        ? deleteConfirmRunId === selectedRunId
-                                            ? styles.buttonDangerSolid
-                                            : styles.buttonDangerSoft
-                                        : styles.buttonDisabled
-                                }`}
-                                onClick={handleDeleteSelectedRun}
-                                disabled={!selectedRunId}
-                                type="button"
-                            >
-                                {deleteConfirmRunId === selectedRunId
-                                    ? 'Confirm delete'
-                                    : 'Delete'}
-                            </button>
+                        <div className="space-y-3">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <select
+                                    className={`w-full max-w-sm rounded-md p-2 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
+                                    value={selectedRunId}
+                                    onChange={handleSelectRun}
+                                >
+                                    <option value="">Load from history</option>
+                                    {history.map((run) => (
+                                        <option key={run.id} value={run.id}>
+                                            {formatRunLabel(run)}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                                        selectedRunId
+                                            ? deleteConfirmRunId ===
+                                              selectedRunId
+                                                ? styles.buttonDangerSolid
+                                                : styles.buttonDangerSoft
+                                            : styles.buttonDisabled
+                                    }`}
+                                    onClick={handleDeleteSelectedRun}
+                                    disabled={!selectedRunId}
+                                    type="button"
+                                >
+                                    {deleteConfirmRunId === selectedRunId
+                                        ? 'Confirm delete'
+                                        : 'Delete'}
+                                </button>
+                                <button
+                                    className={`rounded-md px-4 py-2 text-sm font-medium ${styles.surface} ${styles.border} ${styles.textPrimary}`}
+                                    onClick={handleReloadHistory}
+                                >
+                                    Reload history
+                                </button>
+                            </div>
+                            <div className="w-full max-w-lg space-y-2">
+                                <label
+                                    htmlFor="results-save-name"
+                                    className={`block text-sm font-semibold ${styles.textPrimary}`}
+                                >
+                                    Save as
+                                </label>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <input
+                                        id="results-save-name"
+                                        type="text"
+                                        className={`flex-1 min-w-[220px] rounded-md px-3 py-2 text-sm ${styles.surface} ${styles.border} ${styles.textPrimary}`}
+                                        value={saveName}
+                                        onChange={(event) =>
+                                            setSaveName(event.target.value)
+                                        }
+                                        placeholder="Enter a new result name"
+                                    />
+                                    <button
+                                        className={`rounded-md px-4 py-2 text-sm font-medium transition ${styles.buttonAccentSoft}`}
+                                        onClick={handleSaveCurrentRun}
+                                        type="button"
+                                    >
+                                        Save run
+                                    </button>
+                                </div>
+                                <p className={`text-xs ${styles.textMuted}`}>
+                                    This creates a new saved result and keeps
+                                    older ones untouched.
+                                </p>
+                            </div>
                         </div>
                         {deleteConfirmRunId === selectedRunId &&
                         selectedRunId ? (
@@ -417,6 +516,7 @@ export default function ComparePage() {
                             }
                             placeholder="Paste reference text here"
                         />
+
                         <div className="mt-3 flex flex-wrap items-center gap-3">
                             <button
                                 className={`rounded-md px-4 py-2 text-sm font-medium shadow-sm transition active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60 ${styles.surface} ${styles.border} ${styles.textPrimary}`}
@@ -571,6 +671,12 @@ export default function ComparePage() {
                                     rtTime: entry.metrics.rtTime,
                                 }}
                                 showTime={true}
+                                subtitle={
+                                    entry.audioDuration !== null &&
+                                    entry.audioDuration !== undefined
+                                        ? `Audio duration: ${entry.audioDuration.toFixed(2)} s`
+                                        : undefined
+                                }
                                 footer={
                                     <button
                                         className={`rounded-md px-3 py-1.5 text-xs font-medium ${styles.buttonAccentSoft}`}

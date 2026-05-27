@@ -142,7 +142,7 @@ function MetricChart({
                         borderWidth: 1,
                         borderRadius: 0,
                         borderSkipped: false,
-                        maxBarThickness: 20,
+                        maxBarThickness: 100,
                     },
                 ],
             },

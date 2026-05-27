@@ -14,5 +14,6 @@ export type CompareEntry = {
     fileName: string
     text: string
     metrics: EntryMetrics
+    audioDuration?: number | null
     status: EntryStatus
 }
