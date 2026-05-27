@@ -319,6 +319,7 @@ export default function MetricsChartPanel({
     emptyDescription = 'Click Count metrics to compare the entered texts and visualize WER, CER, processing time, and RTF in this area.',
 }: MetricsChartPanelProps) {
     const [chartMode, setChartMode] = useState<ChartMode>('chartjs')
+    const [expandedCharts, setExpandedCharts] = useState(false)
     const entries = Object.entries(metricsByModel)
 
     const werItems: MetricPoint[] = entries
@@ -382,38 +383,54 @@ export default function MetricsChartPanel({
                 <h3 className={`text-sm font-semibold ${styles.textPrimary}`}>
                     {title}
                 </h3>
-                <div
-                    className={`inline-flex rounded-lg p-1 text-xs font-medium ${styles.surfaceMuted} ${styles.border}`}
-                >
+                <div className="flex flex-wrap items-center gap-2">
                     <button
-                        className={`rounded-md px-3 py-1.5 transition ${
-                            chartMode === 'chartjs'
-                                ? 'bg-gray-900 text-white shadow-sm'
-                                : `${styles.textMuted} ${styles.surface}`
-                        }`}
-                        onClick={() => setChartMode('chartjs')}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${styles.surface} ${styles.border} ${styles.textPrimary}`}
+                        onClick={() => setExpandedCharts((prev) => !prev)}
                         type="button"
+                        aria-pressed={expandedCharts}
                     >
-                        Chart.js
+                        {expandedCharts ? 'Collapse charts' : 'Expand charts'}
                     </button>
-                    <button
-                        className={`rounded-md px-3 py-1.5 transition ${
-                            chartMode === 'classic'
-                                ? 'bg-gray-900 text-white shadow-sm'
-                                : `${styles.textMuted} ${styles.surface}`
-                        }`}
-                        onClick={() => setChartMode('classic')}
-                        type="button"
+                    <div
+                        className={`inline-flex rounded-lg p-1 text-xs font-medium ${styles.surfaceMuted} ${styles.border}`}
                     >
-                        Old view
-                    </button>
+                        <button
+                            className={`rounded-md px-3 py-1.5 transition ${
+                                chartMode === 'chartjs'
+                                    ? 'bg-gray-900 text-white shadow-sm'
+                                    : `${styles.textMuted} ${styles.surface}`
+                            }`}
+                            onClick={() => setChartMode('chartjs')}
+                            type="button"
+                        >
+                            Chart.js
+                        </button>
+                        <button
+                            className={`rounded-md px-3 py-1.5 transition ${
+                                chartMode === 'classic'
+                                    ? 'bg-gray-900 text-white shadow-sm'
+                                    : `${styles.textMuted} ${styles.surface}`
+                            }`}
+                            onClick={() => setChartMode('classic')}
+                            type="button"
+                        >
+                            Old view
+                        </button>
+                    </div>
                 </div>
             </div>
             <p className={`mt-2 text-xs ${styles.textMuted}`}>
                 Switch views to compare the new Chart.js charts with the
                 previous bar layout. PNG download is available in Chart.js mode.
             </p>
-            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div
+                className={`mt-3 grid gap-3 ${
+                    expandedCharts
+                        ? 'grid-cols-1'
+                        : 'md:grid-cols-2 xl:grid-cols-4'
+                }`}
+            >
                 <MetricChart
                     title="WER"
                     items={werItems}
