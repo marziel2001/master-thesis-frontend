@@ -7,15 +7,11 @@ import TranscriptionCard from '../components/TranscriptionCard'
 import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
 import { normalizeText } from '../requests/normalizeText'
-import {
-    deleteRun,
-    formatRunLabel,
-    loadHistory,
-    saveRunSafe,
-} from '../utils/resultsHistory'
+import { createRun, deleteRun, listRuns } from '../requests/runs'
+import { formatRunLabel } from '../utils/resultsHistory'
 import styles from '../styles/theme.module.css'
 import type { CompareEntry, EntryMetrics } from './ComparePage.types'
-import type { StoredRun } from '../utils/resultsHistory.types'
+import type { RunData } from '../requests/runs.types'
 
 type ImportedResultJson = {
     modelName?: unknown
@@ -79,7 +75,7 @@ export default function ComparePage() {
     const [referenceText, setReferenceText] = useState('')
     const [referenceFileName, setReferenceFileName] = useState('')
     const [entries, setEntries] = useState<CompareEntry[]>([])
-    const [history, setHistory] = useState<StoredRun[]>(() => loadHistory())
+    const [history, setHistory] = useState<RunData[]>([])
     const [selectedRunId, setSelectedRunId] = useState('')
     const [deleteConfirmRunId, setDeleteConfirmRunId] = useState('')
     const [saveName, setSaveName] = useState('')
@@ -135,6 +131,20 @@ export default function ComparePage() {
             window.clearTimeout(timerId)
         }
     }, [defaultModelId])
+
+    const reloadRuns = async () => {
+        try {
+            const runs = await listRuns()
+            setHistory(runs)
+        } catch (error) {
+            console.error(error)
+            setStatusMessage('Failed to load runs from server.')
+        }
+    }
+
+    useEffect(() => {
+        void reloadRuns()
+    }, [])
 
     const updateEntry = (
         id: string,
@@ -339,8 +349,7 @@ export default function ComparePage() {
     }
 
     const handleReloadHistory = () => {
-        const next = loadHistory()
-        setHistory(next)
+        void reloadRuns()
     }
 
     const handleDeleteSelectedRun = () => {
@@ -355,15 +364,22 @@ export default function ComparePage() {
             return
         }
 
-        const next = deleteRun(selectedRunId)
-        setHistory(next)
-        setSelectedRunId('')
-        setDeleteConfirmRunId('')
-        setStatusMessage('History entry deleted.')
-        setReferenceTextWithVersion('')
-        setReferenceFileName('')
-        setSaveName('')
-        setEntries(defaultModelId ? [createEntry(defaultModelId)] : [])
+        void (async () => {
+            try {
+                await deleteRun(selectedRunId)
+                await reloadRuns()
+                setSelectedRunId('')
+                setDeleteConfirmRunId('')
+                setStatusMessage('History entry deleted.')
+                setReferenceTextWithVersion('')
+                setReferenceFileName('')
+                setSaveName('')
+                setEntries(defaultModelId ? [createEntry(defaultModelId)] : [])
+            } catch (error) {
+                console.error(error)
+                setStatusMessage('Failed to delete run on server.')
+            }
+        })()
     }
 
     const handleSaveCurrentRun = () => {
@@ -396,28 +412,24 @@ export default function ComparePage() {
             return
         }
 
-        const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`
-
-        const saveResult = saveRunSafe({
-            id: runId,
-            createdAt: new Date().toISOString(),
-            name: saveName.trim() || undefined,
-            referenceText,
-            results: runResults,
-        })
-
-        if (!saveResult.ok) {
-            setStatusMessage(
-                `Failed to save history. ${saveResult.error ?? ''}`.trim()
-            )
-            return
-        }
-
-        setHistory(loadHistory())
-        setSelectedRunId('')
-        setDeleteConfirmRunId('')
-        setSaveName('')
-        setStatusMessage('History entry saved.')
+        void (async () => {
+            try {
+                await createRun({
+                    name: saveName.trim() || undefined,
+                    referenceText,
+                    audioFileName: referenceFileName || null,
+                    results: runResults,
+                })
+                await reloadRuns()
+                setSelectedRunId('')
+                setDeleteConfirmRunId('')
+                setSaveName('')
+                setStatusMessage('History entry saved.')
+            } catch (error) {
+                console.error(error)
+                setStatusMessage('Failed to save run on server.')
+            }
+        })()
     }
 
     const handleExportCsv = () => {

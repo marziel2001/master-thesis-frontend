@@ -9,9 +9,9 @@ import styles from '../styles/theme.module.css'
 import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
 import { normalizeText } from '../requests/normalizeText'
+import { createRun } from '../requests/runs'
 import { transcribeAudio } from '../requests/transcription'
 import { updateOutputFile } from '../requests/updateOutput'
-import { saveRunSafe } from '../utils/resultsHistory'
 import { type ModelMetrics, type ModelStatus } from './MainPage.types'
 
 const EMPTY_METRICS: ModelMetrics = {
@@ -162,8 +162,15 @@ function MainPage() {
         }
 
         const baseName = selectedFile.name.replace(/\.[^.]+$/, '')
-        const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ')
-        return `${baseName} - ${stamp}`
+        const safeBaseName = baseName
+            .replace(/[^a-z0-9._-]+/gi, '_')
+            .replace(/^[_ .]+|[_ .]+$/g, '')
+        const now = new Date()
+        const pad = (value: number) => String(value).padStart(2, '0')
+        const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
+            now.getDate()
+        )}_${pad(now.getHours())}${pad(now.getMinutes())}`
+        return `${safeBaseName || 'audio'}_${stamp}`
     }
 
     const bumpReferenceVersion = () => {
@@ -546,18 +553,16 @@ function MainPage() {
             return
         }
 
-        const saveResult = saveRunSafe({
-            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            createdAt: new Date().toISOString(),
-            name: saveName.trim() || undefined,
-            referenceText,
-            results: runResults,
-        })
-
-        if (!saveResult.ok) {
-            setHistoryMessage(
-                `Failed to save history. ${saveResult.error ?? ''}`.trim()
-            )
+        try {
+            await createRun({
+                name: saveName.trim() || undefined,
+                referenceText,
+                audioFileName: fileName || null,
+                results: runResults,
+            })
+        } catch (error) {
+            console.error(error)
+            setHistoryMessage('Failed to save run on server.')
             return
         }
 
@@ -578,7 +583,7 @@ function MainPage() {
             )
 
         if (outputUpdates.length === 0) {
-            setHistoryMessage('Saved to local history.')
+            setHistoryMessage('Saved run to server.')
             return
         }
 
@@ -599,14 +604,12 @@ function MainPage() {
         const successUpdates = updateResults.length - failedUpdates
 
         if (failedUpdates === 0) {
-            setHistoryMessage(
-                'Saved to local history and updated output files.'
-            )
+            setHistoryMessage('Saved run to server and updated output files.')
             return
         }
 
         setHistoryMessage(
-            `Saved to local history. Updated ${successUpdates} output files, ${failedUpdates} failed.`
+            `Saved run to server. Updated ${successUpdates} output files, ${failedUpdates} failed.`
         )
     }
 
@@ -616,22 +619,20 @@ function MainPage() {
             return
         }
 
-        const saveResult = saveRunSafe({
-            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            createdAt: new Date().toISOString(),
-            name: saveName.trim() || undefined,
-            referenceText,
-            results: batchResults,
-        })
-
-        if (!saveResult.ok) {
-            setHistoryMessage(
-                `Failed to save history. ${saveResult.error ?? ''}`.trim()
-            )
-            return
-        }
-
-        setHistoryMessage('Saved to local history.')
+        void (async () => {
+            try {
+                await createRun({
+                    name: saveName.trim() || undefined,
+                    referenceText,
+                    audioFileName: fileName || null,
+                    results: batchResults,
+                })
+                setHistoryMessage('Saved run to server.')
+            } catch (error) {
+                console.error(error)
+                setHistoryMessage('Failed to save run on server.')
+            }
+        })()
     }
 
     const handleUpload = async () => {
@@ -676,7 +677,7 @@ function MainPage() {
         }
 
         const shouldSave = window.confirm(
-            'The selected model run finished. Save this session to local history?'
+            'The selected model run finished. Save this session to the server?'
         )
 
         if (shouldSave) {
