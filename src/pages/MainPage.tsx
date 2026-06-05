@@ -10,6 +10,7 @@ import { useModelCatalog } from '../hooks/useModelCatalog'
 import { getMetrics } from '../requests/metrics'
 import { normalizeText } from '../requests/normalizeText'
 import { transcribeAudio } from '../requests/transcription'
+import { updateOutputFile } from '../requests/updateOutput'
 import { saveRunSafe } from '../utils/resultsHistory'
 import { type ModelMetrics, type ModelStatus } from './MainPage.types'
 
@@ -131,6 +132,9 @@ function MainPage() {
     const [modelVariants, setModelVariants] = useState<Record<string, string>>(
         {}
     )
+    const [outputFilesByModel, setOutputFilesByModel] = useState<
+        Record<string, string | null>
+    >({})
     const [metricsVersionByModel, setMetricsVersionByModel] = useState<
         Record<string, number>
     >({})
@@ -215,6 +219,7 @@ function MainPage() {
         setModelVariants(
             buildModelRecord(models, (modelId) => getDefaultVariant(modelId))
         )
+        setOutputFilesByModel(buildModelRecord(models, () => null))
         setMetricsVersionByModel(
             buildModelRecord(models, () => referenceVersionRef.current)
         )
@@ -238,6 +243,13 @@ function MainPage() {
 
     const setModelVersion = (model: string, version: string) => {
         setModelVersions((previous) => ({ ...previous, [model]: version }))
+    }
+
+    const setModelOutputFile = (model: string, outputFile: string | null) => {
+        setOutputFilesByModel((previous) => ({
+            ...previous,
+            [model]: outputFile,
+        }))
     }
 
     const setModelMetricsLoading = (model: string, loading: boolean) => {
@@ -276,6 +288,7 @@ function MainPage() {
         setModelStatus(model, 'loading')
         setModelResult(model, '')
         setModelMetrics(model, EMPTY_METRICS)
+        setModelOutputFile(model, null)
 
         try {
             const selectedVariant = modelVariants[model] || ''
@@ -286,6 +299,7 @@ function MainPage() {
                 rtTime,
                 modelVersion,
                 audioDuration: responseAudioDuration,
+                outputFile,
             } = await transcribeAudio(
                 model,
                 file,
@@ -308,6 +322,7 @@ function MainPage() {
             setModelMetrics(model, { wer, cer, rtTime, rtf })
             setModelStatus(model, 'success')
             setModelVersion(model, modelVersion || selectedVariant)
+            setModelOutputFile(model, outputFile)
             setMetricsVersionByModel((previous) => ({
                 ...previous,
                 [model]: referenceVersionForMetrics,
@@ -332,6 +347,7 @@ function MainPage() {
             )
             setModelMetrics(model, EMPTY_METRICS)
             setModelStatus(model, 'error')
+            setModelOutputFile(model, null)
             return null
         } finally {
             setModelLoading(model, false)
@@ -492,7 +508,7 @@ function MainPage() {
         )
     })
 
-    const handleSaveRun = () => {
+    const handleSaveRun = async () => {
         if (!hasAnyResult) {
             setHistoryMessage('Nothing to save yet.')
             return
@@ -545,7 +561,53 @@ function MainPage() {
             return
         }
 
-        setHistoryMessage('Saved to local history.')
+        const outputUpdates = runResults
+            .map((entry) => ({
+                outputFile: outputFilesByModel[entry.model] ?? null,
+                wer: entry.wer,
+                cer: entry.cer,
+            }))
+            .filter(
+                (
+                    entry
+                ): entry is {
+                    outputFile: string
+                    wer: number | null
+                    cer: number | null
+                } => Boolean(entry.outputFile)
+            )
+
+        if (outputUpdates.length === 0) {
+            setHistoryMessage('Saved to local history.')
+            return
+        }
+
+        const updateResults = await Promise.allSettled(
+            outputUpdates.map((entry) =>
+                updateOutputFile({
+                    outputFile: entry.outputFile,
+                    wer: entry.wer,
+                    cer: entry.cer,
+                    referenceText,
+                })
+            )
+        )
+
+        const failedUpdates = updateResults.filter(
+            (result) => result.status === 'rejected'
+        ).length
+        const successUpdates = updateResults.length - failedUpdates
+
+        if (failedUpdates === 0) {
+            setHistoryMessage(
+                'Saved to local history and updated output files.'
+            )
+            return
+        }
+
+        setHistoryMessage(
+            `Saved to local history. Updated ${successUpdates} output files, ${failedUpdates} failed.`
+        )
     }
 
     const saveBatchRun = (batchResults: FinishedModelResult[]) => {
