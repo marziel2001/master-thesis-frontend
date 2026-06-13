@@ -5,7 +5,7 @@ export async function getDiffHtml({
     referenceText,
     hypothesisText,
     modelName,
-}: GetDiffHtmlParams): Promise<string> {
+}: GetDiffHtmlParams): Promise<GetDiffHtmlResponse> {
     const response = await apiClient.post<GetDiffHtmlResponse>(
         '/api/diff-html',
         {
@@ -16,5 +16,5 @@ export async function getDiffHtml({
         }
     )
 
-    return typeof response.data?.html === 'string' ? response.data.html : ''
+    return response.data
 }

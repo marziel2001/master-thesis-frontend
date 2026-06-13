@@ -5,5 +5,6 @@ export type GetDiffHtmlParams = {
 }
 
 export type GetDiffHtmlResponse = {
-    html?: unknown
+    ref_html: string
+    hyp_html: string
 }

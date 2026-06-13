@@ -932,7 +932,6 @@ export default function ComparePage() {
                                     Failed to compute metrics.
                                 </p>
                             ) : null}
-
                             <div className="mt-3">
                                 <ColoredDiff
                                     enabled={true}
