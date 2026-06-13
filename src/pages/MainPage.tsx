@@ -197,6 +197,11 @@ function MainPage() {
     }
 
     const normalizeCurrentReferenceText = async () => {
+        const audio = new Audio('/sounds/finish_transcription.mp3')
+        audio.play().catch((err) => {
+            console.warn('Nie udało się odtworzyć dźwięku:', err)
+        })
+
         const text = referenceText.trim()
         if (!text) {
             return
@@ -675,6 +680,11 @@ function MainPage() {
         if (batchResults.length === 0) {
             return
         }
+
+        const audio = new Audio('/sounds/finish_transcription.mp3')
+        audio.play().catch((err) => {
+            console.warn('Nie udało się odtworzyć dźwięku:', err)
+        })
 
         const shouldSave = window.confirm(
             'The selected model run finished. Save this session to the server?'
