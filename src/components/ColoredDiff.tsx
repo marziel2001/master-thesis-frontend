@@ -144,7 +144,7 @@ export default function ColoredDiff({
                         dangerouslySetInnerHTML={{ __html: diff.ref_html }}
                     />
 
-                    {/* HYP */}
+                    {/* HYP t*/}
                     <div
                         ref={hypRef}
                         onScroll={() => handleScroll('hyp')}
