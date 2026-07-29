@@ -1,0 +1,26 @@
+.iconButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.375rem;
+    border: 1px solid var(--app-color-border);
+    border-radius: var(--app-radius-md);
+    background: var(--app-color-surface);
+    color: var(--app-color-text);
+    cursor: pointer;
+    transition: filter var(--app-duration-fast) var(--app-easing-standard);
+}
+
+.iconButton:not(:disabled):hover {
+    filter: brightness(1.05);
+}
+
+.iconButton:disabled {
+    cursor: not-allowed;
+    opacity: var(--app-opacity-disabled-strong);
+}
+
+.icon {
+    width: var(--app-control-icon-size);
+    height: var(--app-control-icon-size);
+}

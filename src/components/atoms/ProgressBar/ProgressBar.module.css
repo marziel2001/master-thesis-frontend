@@ -1,0 +1,14 @@
+.track {
+    width: 100%;
+    height: var(--app-space-2);
+    border-radius: var(--app-radius-full);
+    background: var(--app-color-border-strong);
+    overflow: hidden;
+}
+
+.fill {
+    height: 100%;
+    border-radius: var(--app-radius-full);
+    background: var(--app-color-chart-bar);
+    width: var(--progress-bar-width, 0%);
+}

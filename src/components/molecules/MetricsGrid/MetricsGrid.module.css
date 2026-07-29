@@ -1,0 +1,21 @@
+.header {
+    margin-bottom: var(--app-space-3);
+}
+
+.subtitle {
+    margin-top: var(--app-space-1);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(var(--metrics-grid-columns, 3), minmax(0, 1fr));
+    gap: var(--app-space-3);
+}
+
+.twoColumns {
+    --metrics-grid-columns: 2;
+}
+
+.footer {
+    margin-top: var(--app-space-3);
+}

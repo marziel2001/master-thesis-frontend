@@ -1,0 +1,19 @@
+.modelSelect {
+    max-width: 20rem;
+}
+
+.hypothesisText {
+    margin-top: var(--app-space-3);
+}
+
+.metrics {
+    margin-top: var(--app-space-4);
+}
+
+.errorMessage {
+    margin-top: var(--app-space-2);
+}
+
+.diff {
+    margin-top: var(--app-space-3);
+}

@@ -1,0 +1,14 @@
+.label {
+    margin: 0;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
+    font-weight: var(--app-font-weight-medium);
+    color: var(--app-color-text-muted);
+}
+
+.value {
+    margin: 0;
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
+    color: var(--app-color-text);
+}

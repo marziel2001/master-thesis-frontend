@@ -1,0 +1,216 @@
+/**
+ * Design tokens.
+ *
+ * Single source of truth for colour, spacing, radii, typography, elevation and
+ * motion. Components must never hardcode these values - they reference the
+ * `--app-*` custom properties from their own CSS module.
+ *
+ * The `--app-` prefix keeps the tokens out of Tailwind v4's theme namespaces
+ * (`--color-*`, `--radius-*`, `--shadow-*`, `--text-*`), so adding a token can
+ * never silently redefine a Tailwind utility.
+ */
+
+:root {
+    /* ---------- Colour: surfaces ---------- */
+    --app-color-bg: #f3f4f6;
+    --app-color-surface: #ffffff;
+    --app-color-surface-muted: #f9fafb;
+    --app-color-surface-alt: #f3f4f6;
+
+    /* ---------- Colour: text ---------- */
+    --app-color-text: #111827;
+    --app-color-text-muted: #6b7280;
+    --app-color-text-subtle: #9ca3af;
+    --app-color-text-disabled: #9ca3af;
+
+    /* ---------- Colour: borders ---------- */
+    --app-color-border: #e5e7eb;
+    --app-color-border-strong: #d1d5db;
+
+    /* ---------- Colour: accent ---------- */
+    --app-color-accent: #2563eb;
+    --app-color-accent-soft-bg: #dbeafe;
+    --app-color-accent-soft-border: #93c5fd;
+    --app-color-accent-soft-text: #1d4ed8;
+
+    /* ---------- Colour: primary action ---------- */
+    --app-color-primary-bg: #2563eb;
+    --app-color-primary-text: #ffffff;
+    --app-color-primary-disabled-bg: #93c5fd;
+
+    /* ---------- Colour: navigation ---------- */
+    --app-color-nav-link: #374151;
+    --app-color-nav-link-hover: #111827;
+    --app-color-nav-link-hover-bg: #f3f4f6;
+    --app-color-nav-link-active-bg: #2563eb;
+    --app-color-nav-link-active-text: #ffffff;
+
+    /* ---------- Colour: theme toggle ---------- */
+    --app-color-toggle-bg: #f9fafb;
+    --app-color-toggle-text: #111827;
+
+    /* ---------- Colour: segmented control ---------- */
+    --app-color-segment-active-bg: #111827;
+    --app-color-segment-active-text: #ffffff;
+
+    /* ---------- Colour: async status ---------- */
+    --app-color-status-loading-bg: #fef9c3;
+    --app-color-status-loading-border: #fcd34d;
+    --app-color-status-success-bg: #dcfce7;
+    --app-color-status-success-border: #86efac;
+    --app-color-status-error-bg: #fee2e2;
+    --app-color-status-error-border: #fca5a5;
+
+    /* ---------- Colour: feedback messages ---------- */
+    --app-color-danger-text: #dc2626;
+    --app-color-danger-text-subtle: #ef4444;
+    --app-color-danger-hover-bg: #fef2f2;
+    --app-color-danger-active-bg: #fee2e2;
+    --app-color-success-text: #16a34a;
+
+    /* ---------- Colour: danger actions ---------- */
+    --app-color-danger-soft-bg: #fee2e2;
+    --app-color-danger-soft-border: #fca5a5;
+    --app-color-danger-soft-text: #b91c1c;
+    --app-color-danger-strong-bg: #dc2626;
+    --app-color-danger-strong-text: #ffffff;
+
+    /* ---------- Colour: data visualisation ---------- */
+    --app-color-chart-bar: #3b82f6;
+    --app-color-chart-bar-fill: rgb(37 99 235 / 0.82);
+    --app-color-chart-bar-border: #2563eb;
+    --app-color-chart-grid: rgb(148 163 184 / 0.22);
+    --app-color-chart-axis-label: #334155;
+    --app-color-chart-axis-tick: #64748b;
+
+    /* ---------- Spacing ---------- */
+    --app-space-1: 0.25rem;
+    --app-space-2: 0.5rem;
+    --app-space-3: 0.75rem;
+    --app-space-4: 1rem;
+    --app-space-5: 1.25rem;
+    --app-space-6: 1.5rem;
+
+    /* ---------- Radii ---------- */
+    --app-radius-sm: 0.25rem;
+    --app-radius-md: 0.375rem;
+    --app-radius-lg: 0.5rem;
+    --app-radius-xl: 0.75rem;
+    --app-radius-2xl: 1rem;
+    --app-radius-full: 9999px;
+
+    /* ---------- Typography ---------- */
+    --app-font-family: Roboto, 'Segoe UI', Arial, sans-serif;
+    --app-font-family-mono: ui-monospace, SFMono-Regular, Menlo, Consolas,
+        monospace;
+    --app-font-size-2xs: 0.6875rem;
+    --app-font-size-xs: 0.75rem;
+    --app-font-size-sm: 0.875rem;
+    --app-font-size-base: 1rem;
+    --app-font-size-2xl: 1.5rem;
+    --app-line-height-2xs: 1rem;
+    --app-line-height-xs: 1rem;
+    --app-line-height-sm: 1.25rem;
+    --app-line-height-base: 1.5rem;
+    --app-line-height-2xl: 2rem;
+    --app-font-weight-normal: 400;
+    --app-font-weight-medium: 500;
+    --app-font-weight-semibold: 600;
+    --app-letter-spacing-wide: 0.025em;
+
+    /* ---------- Elevation ---------- */
+    --app-shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1),
+        0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --app-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+        0 2px 4px -2px rgb(0 0 0 / 0.1);
+
+    /* ---------- Motion ---------- */
+    --app-duration-fast: 150ms;
+    --app-duration-base: 300ms;
+    --app-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --app-easing-out: cubic-bezier(0, 0, 0.2, 1);
+
+    /* ---------- Sizing ---------- */
+    --app-container-max-width: 72rem;
+    --app-control-icon-size: 1rem;
+    --app-diff-pane-height: 25rem;
+    --app-chart-height: 16rem;
+
+    /* ---------- State ---------- */
+    --app-opacity-disabled: 0.6;
+    --app-opacity-disabled-strong: 0.5;
+}
+
+[data-theme='dark'] {
+    /* ---------- Colour: surfaces ---------- */
+    --app-color-bg: #0f172a;
+    --app-color-surface: #111827;
+    --app-color-surface-muted: #0b1220;
+    --app-color-surface-alt: #1f2937;
+
+    /* ---------- Colour: text ---------- */
+    --app-color-text: #e5e7eb;
+    --app-color-text-muted: #94a3b8;
+    --app-color-text-subtle: #64748b;
+    --app-color-text-disabled: #64748b;
+
+    /* ---------- Colour: borders ---------- */
+    --app-color-border: #1f2937;
+    --app-color-border-strong: #334155;
+
+    /* ---------- Colour: accent ---------- */
+    --app-color-accent: #60a5fa;
+    --app-color-accent-soft-bg: #0b2a4a;
+    --app-color-accent-soft-border: #1d4ed8;
+    --app-color-accent-soft-text: #bfdbfe;
+
+    /* ---------- Colour: primary action ---------- */
+    --app-color-primary-bg: #3b82f6;
+    --app-color-primary-text: #f8fafc;
+    --app-color-primary-disabled-bg: #1e3a8a;
+
+    /* ---------- Colour: navigation ---------- */
+    --app-color-nav-link: #cbd5f5;
+    --app-color-nav-link-hover: #ffffff;
+    --app-color-nav-link-hover-bg: #1f2937;
+    --app-color-nav-link-active-bg: #3b82f6;
+    --app-color-nav-link-active-text: #f8fafc;
+
+    /* ---------- Colour: theme toggle ---------- */
+    --app-color-toggle-bg: #0b1220;
+    --app-color-toggle-text: #e5e7eb;
+
+    /* ---------- Colour: segmented control ---------- */
+    --app-color-segment-active-bg: #e5e7eb;
+    --app-color-segment-active-text: #0f172a;
+
+    /* ---------- Colour: async status ---------- */
+    --app-color-status-loading-bg: #3f2d0d;
+    --app-color-status-loading-border: #a16207;
+    --app-color-status-success-bg: #0f2f1a;
+    --app-color-status-success-border: #22c55e;
+    --app-color-status-error-bg: #3b0f0f;
+    --app-color-status-error-border: #ef4444;
+
+    /* ---------- Colour: feedback messages ---------- */
+    --app-color-danger-text: #fca5a5;
+    --app-color-danger-text-subtle: #f87171;
+    --app-color-danger-hover-bg: #3b0f0f;
+    --app-color-danger-active-bg: #4c1414;
+    --app-color-success-text: #4ade80;
+
+    /* ---------- Colour: danger actions ---------- */
+    --app-color-danger-soft-bg: #3b0f0f;
+    --app-color-danger-soft-border: #ef4444;
+    --app-color-danger-soft-text: #fecaca;
+    --app-color-danger-strong-bg: #ef4444;
+    --app-color-danger-strong-text: #0b0f1a;
+
+    /* ---------- Colour: data visualisation ---------- */
+    --app-color-chart-bar: #60a5fa;
+    --app-color-chart-bar-fill: rgb(96 165 250 / 0.82);
+    --app-color-chart-bar-border: #60a5fa;
+    --app-color-chart-grid: rgb(148 163 184 / 0.28);
+    --app-color-chart-axis-label: #cbd5f5;
+    --app-color-chart-axis-tick: #94a3b8;
+}

@@ -1,0 +1,18 @@
+.textArea {
+    composes: control fullWidth from '../formField.module.css';
+    padding: var(--app-space-3);
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
+}
+
+.mutedSurface {
+    composes: mutedSurface from '../formField.module.css';
+}
+
+.minHeightSm {
+    min-height: 7rem;
+}
+
+.minHeightMd {
+    min-height: 8rem;
+}

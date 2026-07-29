@@ -1,0 +1,17 @@
+.runSelect {
+    max-width: 24rem;
+}
+
+.saveGroup {
+    width: 100%;
+    max-width: 32rem;
+}
+
+.saveNameField {
+    flex: 1 1 0;
+    min-width: 13.75rem;
+}
+
+.note {
+    margin-top: var(--app-space-2);
+}

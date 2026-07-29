@@ -1,0 +1,8 @@
+.checkbox {
+    width: var(--app-control-icon-size);
+    height: var(--app-control-icon-size);
+    border: 1px solid var(--app-color-border-strong);
+    border-radius: var(--app-radius-sm);
+    background-color: var(--app-color-surface);
+    accent-color: var(--app-color-accent);
+}

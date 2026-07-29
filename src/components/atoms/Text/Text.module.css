@@ -1,0 +1,83 @@
+.text {
+    margin: 0;
+}
+
+/* ---------- Sizes ---------- */
+
+.size2xs {
+    font-size: var(--app-font-size-2xs);
+    line-height: var(--app-line-height-2xs);
+}
+
+.sizeXs {
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
+}
+
+.sizeSm {
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
+}
+
+.sizeBase {
+    font-size: var(--app-font-size-base);
+    line-height: var(--app-line-height-base);
+}
+
+.size2xl {
+    font-size: var(--app-font-size-2xl);
+    line-height: var(--app-line-height-2xl);
+}
+
+/* ---------- Weights ---------- */
+
+.weightNormal {
+    font-weight: var(--app-font-weight-normal);
+}
+
+.weightMedium {
+    font-weight: var(--app-font-weight-medium);
+}
+
+.weightSemibold {
+    font-weight: var(--app-font-weight-semibold);
+}
+
+/* ---------- Tones ---------- */
+
+.tonePrimary {
+    color: var(--app-color-text);
+}
+
+.toneMuted {
+    color: var(--app-color-text-muted);
+}
+
+.toneSubtle {
+    color: var(--app-color-text-subtle);
+}
+
+.toneDanger {
+    color: var(--app-color-danger-text);
+}
+
+.toneDangerSubtle {
+    color: var(--app-color-danger-text-subtle);
+}
+
+.toneSuccess {
+    color: var(--app-color-success-text);
+}
+
+/* ---------- Modifiers ---------- */
+
+.eyebrow {
+    text-transform: uppercase;
+    letter-spacing: var(--app-letter-spacing-wide);
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -1,0 +1,22 @@
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: var(--row-align, center);
+    justify-content: var(--row-justify, flex-start);
+}
+
+.alignCenter {
+    --row-align: center;
+}
+
+.alignStart {
+    --row-align: flex-start;
+}
+
+.justifyStart {
+    --row-justify: flex-start;
+}
+
+.justifyBetween {
+    --row-justify: space-between;
+}

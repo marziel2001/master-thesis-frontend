@@ -1,0 +1,43 @@
+/* This card owns its surface rather than composing the Panel atom: the status
+   tint has to override the background and border colour, and two competing
+   single-class rules would be resolved by bundle order. */
+.card {
+    width: 100%;
+    padding: var(--app-space-4);
+    border: 1px solid var(--card-border-color, var(--app-color-border));
+    border-radius: var(--app-radius-xl);
+    background: var(--card-background, var(--app-color-surface));
+    color: var(--app-color-text);
+    box-shadow: var(--app-shadow-sm);
+    transition:
+        background-color var(--app-duration-base) var(--app-easing-out),
+        border-color var(--app-duration-base) var(--app-easing-out);
+}
+
+.statusLoading {
+    --card-background: var(--app-color-status-loading-bg);
+    --card-border-color: var(--app-color-status-loading-border);
+}
+
+.statusSuccess {
+    --card-background: var(--app-color-status-success-bg);
+    --card-border-color: var(--app-color-status-success-border);
+}
+
+.statusError {
+    --card-background: var(--app-color-status-error-bg);
+    --card-border-color: var(--app-color-status-error-border);
+}
+
+.header {
+    width: 100%;
+    margin-bottom: var(--app-space-3);
+}
+
+.defaultHeader {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-space-3);
+}

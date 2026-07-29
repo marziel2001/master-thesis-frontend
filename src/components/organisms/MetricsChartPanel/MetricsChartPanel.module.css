@@ -1,0 +1,32 @@
+.description {
+    margin-top: var(--app-space-2);
+}
+
+.emptyBox {
+    margin-top: var(--app-space-3);
+}
+
+.emptyDescription {
+    margin-top: var(--app-space-1);
+}
+
+.chartGrid {
+    display: grid;
+    gap: var(--app-space-3);
+    margin-top: var(--app-space-3);
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* Declared after `.chartGrid` so the equal-specificity override is decided by
+   source order within this module rather than by bundle order. */
+@media (min-width: 48rem) {
+    .chartGridCompact {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 80rem) {
+    .chartGridCompact {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}

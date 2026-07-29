@@ -1,0 +1,52 @@
+.label {
+    color: var(--app-color-text);
+}
+
+/* ---------- Layout ---------- */
+
+.block {
+    display: block;
+}
+
+/** Wraps a control and its caption on one row, e.g. a checkbox with a name. */
+.inline {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--app-space-2);
+}
+
+/* ---------- Sizes ---------- */
+
+.sizeXs {
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
+}
+
+.sizeSm {
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
+}
+
+/* ---------- Weights ---------- */
+
+.weightNormal {
+    font-weight: var(--app-font-weight-normal);
+}
+
+.weightMedium {
+    font-weight: var(--app-font-weight-medium);
+}
+
+.weightSemibold {
+    font-weight: var(--app-font-weight-semibold);
+}
+
+/* ---------- Tones ---------- */
+
+.tonePrimary {
+    color: var(--app-color-text);
+}
+
+.toneMuted {
+    color: var(--app-color-text-muted);
+}

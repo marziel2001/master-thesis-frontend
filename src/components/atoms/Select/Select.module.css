@@ -1,0 +1,19 @@
+.select {
+    composes: control from '../formField.module.css';
+}
+
+.fullWidth {
+    composes: fullWidth from '../formField.module.css';
+}
+
+.sizeSm {
+    padding: var(--app-space-1) var(--app-space-2);
+    font-size: var(--app-font-size-xs);
+    line-height: var(--app-line-height-xs);
+}
+
+.sizeMd {
+    padding: var(--app-space-2);
+    font-size: var(--app-font-size-sm);
+    line-height: var(--app-line-height-sm);
+}

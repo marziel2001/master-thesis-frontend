@@ -1,0 +1,31 @@
+/**
+ * Shared form-control recipe. Consumed by the TextArea / TextField / Select
+ * atoms through CSS Modules `composes`, so the bordered-input look is defined
+ * exactly once.
+ *
+ * A composed class has the same specificity as the class composing it, so a
+ * plain property override would be decided by bundle order. Variants therefore
+ * feed `.control` through custom properties (`--field-*`) instead, and sizing
+ * is left to each atom.
+ */
+
+.control {
+    border: 1px solid var(--app-color-border);
+    border-radius: var(--app-radius-md);
+    background: var(--field-surface, var(--app-color-surface));
+    color: var(--app-color-text);
+    font-family: inherit;
+}
+
+.control:disabled {
+    cursor: not-allowed;
+    opacity: var(--app-opacity-disabled);
+}
+
+.mutedSurface {
+    --field-surface: var(--app-color-surface-muted);
+}
+
+.fullWidth {
+    width: 100%;
+}

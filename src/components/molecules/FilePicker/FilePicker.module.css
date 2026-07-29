@@ -1,0 +1,20 @@
+.details {
+    min-width: 0;
+}
+
+.fileName {
+    margin-top: var(--app-space-1);
+}
+
+/** Visually hidden but still reachable by assistive tech and label clicks. */
+.nativeInput {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border-width: 0;
+}

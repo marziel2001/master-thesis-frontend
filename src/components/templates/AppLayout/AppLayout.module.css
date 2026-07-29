@@ -1,0 +1,21 @@
+.page {
+    min-height: 100vh;
+    padding: var(--app-space-6);
+    background: var(--app-color-bg);
+    color: var(--app-color-text);
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: var(--app-container-max-width);
+    margin-inline: auto;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-space-6);
+    margin-top: var(--app-space-6);
+}

@@ -1,0 +1,60 @@
+.panel {
+    border: 1px solid var(--app-color-border);
+    color: var(--app-color-text);
+}
+
+/* ---------- Surfaces ---------- */
+
+.surface {
+    background: var(--app-color-surface);
+}
+
+.muted {
+    background: var(--app-color-surface-muted);
+}
+
+/* ---------- Radii ---------- */
+
+.radiusMd {
+    border-radius: var(--app-radius-md);
+}
+
+.radiusLg {
+    border-radius: var(--app-radius-lg);
+}
+
+.radiusXl {
+    border-radius: var(--app-radius-xl);
+}
+
+.radius2xl {
+    border-radius: var(--app-radius-2xl);
+}
+
+/* ---------- Padding ---------- */
+
+.paddingXs {
+    padding: var(--app-space-2);
+}
+
+.paddingSm {
+    padding: var(--app-space-3);
+}
+
+.paddingMd {
+    padding: var(--app-space-4);
+}
+
+.paddingInline {
+    padding: var(--app-space-2) var(--app-space-3);
+}
+
+/* ---------- Elevation ---------- */
+
+.elevationSm {
+    box-shadow: var(--app-shadow-sm);
+}
+
+.elevationMd {
+    box-shadow: var(--app-shadow-md);
+}
