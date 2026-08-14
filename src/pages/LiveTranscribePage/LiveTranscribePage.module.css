@@ -1,0 +1,22 @@
+.message {
+    margin-top: var(--app-space-4);
+}
+
+.modelGrid {
+    display: grid;
+    gap: var(--app-space-4);
+    margin-top: var(--app-space-5);
+    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 48rem) {
+    .modelGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 80rem) {
+    .modelGrid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}

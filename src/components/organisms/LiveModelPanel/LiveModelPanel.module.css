@@ -1,0 +1,12 @@
+.transcript {
+    width: 100%;
+    resize: vertical;
+}
+
+.footer {
+    margin-top: var(--app-space-2);
+}
+
+.errorMessage {
+    margin-top: var(--app-space-2);
+}

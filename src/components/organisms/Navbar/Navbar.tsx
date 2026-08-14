@@ -12,11 +12,12 @@ type NavItem = {
 /**
  * Linked destinations, in order.
  *
- * `/liveTranscribe` and `/contact` are routed but deliberately unlinked, as
- * they were before: the pages are still placeholders.
+ * `/contact` is routed but deliberately unlinked, as it was before: the page
+ * is still a placeholder.
  */
 const NAV_ITEMS: readonly NavItem[] = [
     { to: '/', label: 'Transkrypcja Pliku' },
+    { to: '/liveTranscribe', label: 'Live transcription' },
     { to: '/compare', label: 'Results reader' },
     { to: '/about', label: 'About' },
 ]

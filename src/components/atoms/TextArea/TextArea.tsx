@@ -1,4 +1,4 @@
-import type { TextareaHTMLAttributes } from 'react'
+import type { Ref, TextareaHTMLAttributes } from 'react'
 import styles from './TextArea.module.css'
 
 export type TextAreaSurface = 'surface' | 'muted'
@@ -7,12 +7,14 @@ export type TextAreaMinHeight = 'sm' | 'md'
 export type TextAreaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
     surface?: TextAreaSurface
     minHeight?: TextAreaMinHeight
+    ref?: Ref<HTMLTextAreaElement>
 }
 
 export default function TextArea({
     surface = 'surface',
     minHeight = 'sm',
     className,
+    ref,
     ...textAreaProps
 }: TextAreaProps) {
     const classNames = [
@@ -24,5 +26,5 @@ export default function TextArea({
         .filter(Boolean)
         .join(' ')
 
-    return <textarea className={classNames} {...textAreaProps} />
+    return <textarea ref={ref} className={classNames} {...textAreaProps} />
 }
